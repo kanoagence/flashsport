@@ -21,9 +21,9 @@ const PACKS = {
   pack2: { label: 'Pack Photo 2', amount: 32900 },
   pack3: { label: 'Pack Photo 3', amount: 35900 },
 };
-const ALBUM_PRICE = 5000; // 50€ en centimes
+const ALBUM_PRICE = 5000;
 
-// ── Stockage commandes en attente (mémoire serveur) ──
+// ── Stockage commandes en mémoire ──
 const pendingOrders = [];
 
 // ── Middleware ──
@@ -32,7 +32,7 @@ app.use(cors());
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
+app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Admin auth ──
@@ -111,16 +111,16 @@ app.post('/api/order/cash', async (req, res) => {
     vendorId:      v.payload.vendorId,
   };
 
-  // Stockage en mémoire pour le dashboard vendeur
   pendingOrders.push(order);
+  console.log(`[order] Nouvelle commande ${order.orderNumber} — ${order.packLabel} — ${order.amount}€ — ${paymentMethod}`);
 
   Promise.all([
-    sheets.appendOrder(order).catch(e => console.error('[sheets]', e)),
+    sheets.appendOrder(order).catch(e => console.error('[sheets]', e.message)),
     (async () => {
       try {
         const pdfBuf = await pdf.generate(order);
         await mailer.sendOrderConfirmation(order, pdfBuf);
-      } catch (e) { console.error('[mail/pdf]', e); }
+      } catch (e) { console.error('[mail/pdf]', e.message); }
     })(),
   ]);
 
@@ -166,12 +166,12 @@ app.post('/api/stripe/webhook', async (req, res) => {
     pendingOrders.push(order);
 
     Promise.all([
-      sheets.appendOrder(order).catch(e => console.error('[sheets]', e)),
+      sheets.appendOrder(order).catch(e => console.error('[sheets]', e.message)),
       (async () => {
         try {
           const pdfBuf = await pdf.generate(order);
           await mailer.sendOrderConfirmation(order, pdfBuf);
-        } catch (e) { console.error('[mail/pdf]', e); }
+        } catch (e) { console.error('[mail/pdf]', e.message); }
       })(),
     ]);
   }
@@ -179,7 +179,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
   res.json({ received: true });
 });
 
-// ── ROUTE 6 — Liste commandes en attente ──
+// ── ROUTE 6 — Liste toutes les commandes ──
 app.get('/api/vendor/orders', adminAuth, (req, res) => {
   res.json({ orders: pendingOrders });
 });
@@ -189,20 +189,19 @@ app.post('/api/vendor/confirm-cash', adminAuth, async (req, res) => {
   const { orderNumber } = req.body;
   if (!orderNumber) return res.status(400).json({ error: 'orderNumber requis' });
   const order = pendingOrders.find(o => o.orderNumber === orderNumber);
-  if (order) order.paymentStatus = 'paid';
-  try {
-    await sheets.markPaid(orderNumber);
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  if (order) {
+    order.paymentStatus = 'paid';
+    console.log(`[confirm] ${orderNumber} marqué encaissé`);
   }
+  sheets.markPaid(orderNumber).catch(e => console.error('[sheets]', e.message));
+  res.json({ ok: true });
 });
 
-// ── ROUTE 8 — Stats vendeur ──
+// ── ROUTE 8 — Stats ──
 app.get('/api/vendor/stats', adminAuth, (req, res) => {
   const paid = pendingOrders.filter(o => o.paymentStatus === 'paid');
   const ca   = paid.reduce((sum, o) => sum + parseFloat(o.amount), 0);
-  res.json({ orders: pendingOrders.length, paid: paid.length, ca: ca.toFixed(2) });
+  res.json({ total: pendingOrders.length, paid: paid.length, ca: ca.toFixed(2) });
 });
 
 // ── Fallback ──
