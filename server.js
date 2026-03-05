@@ -18,11 +18,11 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 const PACKS = {
-  essentiel: { label: 'Essentiel',  amount: 4900  },
-  premium:   { label: 'Premium',    amount: 8900  },
-  integral:  { label: 'Intégral',   amount: 12900 },
-  duo:       { label: 'Duo',        amount: 15900 },
+  pack1: { label: 'Pack Photo 1', amount: 22900 },
+  pack2: { label: 'Pack Photo 2', amount: 32900 },
+  pack3: { label: 'Pack Photo 3', amount: 35900 },
 };
+const ALBUM_PRICE = 5000; // 50€ en centimes
 
 // ── Middleware ──
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -36,7 +36,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ── Admin auth ──
 function adminAuth(req, res, next) {
   const key = req.headers['x-admin-key'] || req.query.key;
-  if (key !== process.env.ADMIN_PASSWORD) {
+  if (key !== (process.env.ADMIN_KEY || process.env.ADMIN_PASSWORD)) {
     return res.status(401).json({ error: 'Non autorisé' });
   }
   next();
@@ -46,7 +46,7 @@ function adminAuth(req, res, next) {
 app.post('/api/vendor/generate-link', adminAuth, (req, res) => {
   const vendorId = req.body.vendorId || 'stand';
   const { token, expiresInSeconds } = tokens.generate(vendorId);
-  const link = `${process.env.BASE_URL || `http://localhost:${PORT}`}/order?t=${token}`;
+  const link = `${process.env.BASE_URL || `http://localhost:${PORT}`}/index.html?t=${token}`;
   res.json({ link, token, expiresInSeconds });
 });
 
@@ -59,16 +59,19 @@ app.get('/api/order/validate', (req, res) => {
 
 // ── ROUTE 3 — Créer un Payment Intent Stripe ──
 app.post('/api/order/payment-intent', async (req, res) => {
-  const { token, packId, customerEmail, customerName, equipageNumber } = req.body;
+  const { token, packId, extraAlbums = 0, customerEmail, customerName, equipageNumber } = req.body;
   const v = tokens.verify(token);
   if (!v.ok) return res.status(400).json({ error: v.reason });
   const pack = PACKS[packId];
   if (!pack) return res.status(400).json({ error: 'Pack invalide' });
+
+  const totalAmount = pack.amount + (parseInt(extraAlbums) || 0) * ALBUM_PRICE;
+
   try {
     const intent = await stripe.paymentIntents.create({
-      amount:   pack.amount,
-      currency: 'eur',
-      metadata: { token, packId, customerEmail, customerName, equipageNumber, vendorId: v.payload.vendorId },
+      amount:        totalAmount,
+      currency:      'eur',
+      metadata:      { token, packId, extraAlbums: String(extraAlbums), customerEmail, customerName, equipageNumber, vendorId: v.payload.vendorId },
       receipt_email: customerEmail,
     });
     res.json({ clientSecret: intent.client_secret });
@@ -78,15 +81,17 @@ app.post('/api/order/payment-intent', async (req, res) => {
   }
 });
 
-// ── ROUTE 4 — Commande espèces ──
+// ── ROUTE 4 — Commande stand (TPE ou espèces) ──
 app.post('/api/order/cash', async (req, res) => {
-  const { token, packId, customerName, customerEmail, customerPhone, equipageNumber } = req.body;
+  const { token, packId, extraAlbums = 0, customerName, customerEmail, customerPhone, equipageNumber, paymentMethod = 'cash' } = req.body;
   const v = tokens.verify(token);
   if (!v.ok) return res.status(400).json({ error: v.reason });
   const pack = PACKS[packId];
   if (!pack) return res.status(400).json({ error: 'Pack invalide' });
 
   tokens.consume(token);
+
+  const totalAmount = pack.amount + (parseInt(extraAlbums) || 0) * ALBUM_PRICE;
 
   const order = {
     orderNumber:   `FS-${Date.now()}-${equipageNumber.replace(/\W/g,'')}`,
@@ -96,8 +101,9 @@ app.post('/api/order/cash', async (req, res) => {
     customerPhone,
     equipageNumber,
     packId,
-    amount:        (pack.amount / 100).toFixed(2),
-    paymentMethod: 'cash',
+    extraAlbums:   parseInt(extraAlbums) || 0,
+    amount:        (totalAmount / 100).toFixed(2),
+    paymentMethod,
     paymentStatus: 'pending',
     vendorId:      v.payload.vendorId,
   };
@@ -121,7 +127,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   let event;
   try {
-    event = secret
+    event = secret && secret !== 'placeholder'
       ? stripe.webhooks.constructEvent(req.body, sig, secret)
       : JSON.parse(req.body);
   } catch (err) {
@@ -142,6 +148,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
       customerPhone:   m.customerPhone || '',
       equipageNumber:  m.equipageNumber,
       packId:          m.packId,
+      extraAlbums:     parseInt(m.extraAlbums) || 0,
       amount:          ((intent.amount_received || intent.amount) / 100).toFixed(2),
       paymentMethod:   'card',
       paymentStatus:   'paid',
@@ -163,7 +170,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
   res.json({ received: true });
 });
 
-// ── ROUTE 6 — Confirmer espèces encaissées ──
+// ── ROUTE 6 — Confirmer encaissement ──
 app.post('/api/vendor/confirm-cash', adminAuth, async (req, res) => {
   const { orderNumber } = req.body;
   if (!orderNumber) return res.status(400).json({ error: 'orderNumber requis' });
@@ -175,14 +182,19 @@ app.post('/api/vendor/confirm-cash', adminAuth, async (req, res) => {
   }
 });
 
-// ── Fallback SPA ──
-app.get('*', (req, res) => {
+// ── ROUTE 7 — Stats vendeur ──
+app.get('/api/vendor/stats', adminAuth, (req, res) => {
+  res.json({ ok: true });
+});
+
+// ── Fallback ──
+app.get('/order', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
   console.log(`\n⚡ Flashsport server → http://localhost:${PORT}`);
-  console.log(`   Admin key: ${process.env.ADMIN_PASSWORD || '(non défini)'}\n`);
+  console.log(`   Admin key: ${process.env.ADMIN_KEY || process.env.ADMIN_PASSWORD || '(non défini)'}\n`);
 });
 
 module.exports = app;
