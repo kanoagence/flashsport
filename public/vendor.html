@@ -29,6 +29,7 @@ header{padding:24px 0 20px;display:flex;align-items:center;justify-content:space
 .badge-vendor{font-size:11px;font-weight:600;background:var(--ink);color:#fff;border-radius:4px;padding:3px 8px;display:none;}
 .logout-btn{height:30px;padding:0 12px;background:var(--white);border:1px solid var(--line);border-radius:5px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--ink-3);cursor:pointer;transition:all .15s;display:none;}
 .logout-btn:hover{background:var(--red-t);border-color:var(--red-l);color:var(--red);}
+
 #login-wrap{padding-top:60px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;}
 #login-wrap h2{font-size:18px;font-weight:700;letter-spacing:-.3px;}
 #login-wrap p{font-size:13px;color:var(--ink-3);}
@@ -40,8 +41,10 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
 .btn-primary:hover{background:#1D4ED8;}
 .btn-primary:disabled{background:#93C5FD;cursor:not-allowed;}
 .err-login{font-size:12px;color:var(--red);text-align:center;display:none;margin-bottom:8px;}
+
 #app-wrap{display:none;}
 #app-wrap.show{display:block;}
+
 .card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;overflow:hidden;}
 .cs{padding:16px 18px;border-bottom:1px solid #F3F4F6;}
 .cs:last-child{border-bottom:none;}
@@ -51,9 +54,11 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
 .toggle-btn:hover{background:var(--bg);color:var(--ink-3);}
 .collapsible{overflow:hidden;transition:max-height .3s ease,opacity .3s ease;max-height:500px;opacity:1;margin-top:12px;}
 .collapsible.hidden{max-height:0;opacity:0;margin-top:0;}
+
 .gen-btn{width:100%;height:48px;background:var(--ink);border:none;border-radius:var(--r-sm);color:#fff;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s;}
 .gen-btn:hover{background:#1f2937;}
 .gen-btn:disabled{background:#6B7280;cursor:not-allowed;}
+
 .link-result{background:var(--green-t);border:1px solid var(--green-l);border-radius:var(--r-sm);padding:14px;margin-top:12px;display:none;}
 .link-result.show{display:block;}
 .link-result.expired{background:var(--bg);border-color:var(--line);}
@@ -67,10 +72,12 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
 .qr-inner{background:#fff;padding:12px;border:1px solid var(--line);border-radius:var(--r-sm);display:inline-block;}
 .qr-hint{font-size:11px;color:var(--ink-4);text-align:center;}
 .copy-link{font-size:11px;color:var(--blue);cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+
 .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .stat-box{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 16px;}
 .stat-val{font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.5px;line-height:1;}
 .stat-lbl{font-size:11px;color:var(--ink-4);margin-top:4px;}
+
 .collect-item{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #F3F4F6;}
 .collect-item:last-child{border-bottom:none;}
 .ci-left .ci-name{font-size:13px;font-weight:600;}
@@ -83,10 +90,12 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
 .confirm-btn{height:30px;padding:0 12px;background:var(--green-t);border:1px solid var(--green-l);border-radius:5px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--green);cursor:pointer;transition:all .15s;white-space:nowrap;}
 .confirm-btn:hover{background:var(--green);color:#fff;}
 .confirm-btn.done{background:var(--green);color:#fff;cursor:default;opacity:.7;}
+
 .polling-indicator{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-4);margin-top:10px;}
 .poll-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s ease-in-out infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .empty-state{font-size:13px;color:var(--ink-4);text-align:center;padding:16px 0;}
+
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ink);color:#fff;font-size:12px;font-weight:500;padding:8px 16px;border-radius:999px;transition:transform .25s,opacity .25s;opacity:0;pointer-events:none;z-index:100;}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
 </style>
@@ -198,21 +207,27 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
 
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
-let ADMIN_KEY = '', VENDOR_ID = '';
+// ── Session persistante ──
+let ADMIN_KEY = sessionStorage.getItem('fs_key') || '';
+let VENDOR_ID = sessionStorage.getItem('fs_vid') || '';
 let linkTimer = null, linkSecs = 0, currentLink = '';
 let pollInterval = null;
 let knownOrders = new Set();
 let confirmedOrders = new Set();
 let statsVisible = true, collectVisible = true;
+let firstPoll = true;
 
+// ── Login ──
 async function login() {
   const key = document.getElementById('admin-key').value.trim();
   const vid = document.getElementById('vendor-id').value.trim() || 'stand';
   if (!key) return;
+
+  const btn = document.querySelector('.btn-primary');
+  btn.disabled = true; btn.textContent = 'Connexion…';
 
   const res = await fetch('/api/vendor/generate-link', {
     method:  'POST',
@@ -220,29 +235,43 @@ async function login() {
     body:    JSON.stringify({ vendorId: vid }),
   });
 
+  btn.disabled = false; btn.textContent = 'Accéder au stand';
+
   if (res.status === 401) {
     document.getElementById('err-login').style.display = 'block';
     return;
   }
 
   ADMIN_KEY = key; VENDOR_ID = vid;
+  sessionStorage.setItem('fs_key', key);
+  sessionStorage.setItem('fs_vid', vid);
+
   const data = await res.json();
-
-  document.getElementById('login-wrap').style.display   = 'none';
-  document.getElementById('app-wrap').classList.add('show');
-  document.getElementById('vendor-badge').style.display  = 'block';
-  document.getElementById('vendor-badge').textContent    = vid;
-  document.getElementById('logout-btn').style.display    = 'block';
-
+  showApp();
   showLink(data.link, data.expiresInSeconds);
   startPolling();
 }
 
+// ── Logout ──
 function logout() {
+  sessionStorage.removeItem('fs_key');
+  sessionStorage.removeItem('fs_vid');
   ADMIN_KEY = ''; VENDOR_ID = '';
   if (linkTimer)    clearInterval(linkTimer);
   if (pollInterval) clearInterval(pollInterval);
-  knownOrders.clear(); confirmedOrders.clear();
+  knownOrders.clear(); confirmedOrders.clear(); firstPoll = true;
+  hideApp();
+}
+
+// ── Afficher / cacher l'app ──
+function showApp() {
+  document.getElementById('login-wrap').style.display   = 'none';
+  document.getElementById('app-wrap').classList.add('show');
+  document.getElementById('vendor-badge').style.display  = 'block';
+  document.getElementById('vendor-badge').textContent    = VENDOR_ID;
+  document.getElementById('logout-btn').style.display    = 'block';
+}
+function hideApp() {
   document.getElementById('app-wrap').classList.remove('show');
   document.getElementById('login-wrap').style.display   = 'flex';
   document.getElementById('vendor-badge').style.display  = 'none';
@@ -252,20 +281,26 @@ function logout() {
   document.getElementById('err-login').style.display = 'none';
 }
 
+// ── Générer lien ──
 async function generateLink() {
   const btn = document.getElementById('gen-btn');
   btn.disabled = true; btn.textContent = 'Génération…';
-  const res  = await fetch('/api/vendor/generate-link', {
-    method:  'POST',
-    headers: { 'Content-Type':'application/json', 'x-admin-key': ADMIN_KEY },
-    body:    JSON.stringify({ vendorId: VENDOR_ID }),
-  });
-  const data = await res.json();
-  btn.disabled = false;
-  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg> Nouveau lien (15 min)`;
-  showLink(data.link, data.expiresInSeconds);
+  try {
+    const res  = await fetch('/api/vendor/generate-link', {
+      method:  'POST',
+      headers: { 'Content-Type':'application/json', 'x-admin-key': ADMIN_KEY },
+      body:    JSON.stringify({ vendorId: VENDOR_ID }),
+    });
+    if (res.status === 401) { logout(); return; }
+    const data = await res.json();
+    showLink(data.link, data.expiresInSeconds);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg> Nouveau lien (15 min)`;
+  }
 }
 
+// ── Afficher QR ──
 function showLink(link, secs) {
   currentLink = link;
   const result = document.getElementById('link-result');
@@ -275,7 +310,11 @@ function showLink(link, secs) {
 
   const qrBox = document.getElementById('qr-code');
   qrBox.innerHTML = '';
-  new QRCode(qrBox, { text:link, width:180, height:180, colorDark:'#0F1117', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M });
+  new QRCode(qrBox, {
+    text: link, width:180, height:180,
+    colorDark:'#0F1117', colorLight:'#ffffff',
+    correctLevel: QRCode.CorrectLevel.M,
+  });
 
   if (linkTimer) clearInterval(linkTimer);
   linkSecs = secs;
@@ -307,26 +346,32 @@ function startPolling() {
 
 async function fetchOrders() {
   try {
-    const res  = await fetch('/api/vendor/orders', { headers:{ 'x-admin-key': ADMIN_KEY } });
+    const res = await fetch('/api/vendor/orders', {
+      headers: { 'x-admin-key': ADMIN_KEY },
+    });
+    if (res.status === 401) { logout(); return; }
     const data = await res.json();
     if (!data.orders) return;
 
-    // Notif nouvelles commandes
-    let isFirst = knownOrders.size === 0;
+    // Notif nouvelles commandes (pas au premier poll)
     data.orders.forEach(o => {
       if (!knownOrders.has(o.orderNumber)) {
         knownOrders.add(o.orderNumber);
-        if (!isFirst) showToast(`🔔 Nouvelle commande — ${o.equipageNumber}`);
+        if (!firstPoll) showToast(`🔔 Nouvelle commande — ${o.equipageNumber}`);
       }
     });
+    firstPoll = false;
 
     renderCollectList(data.orders);
     updateStats(data.orders);
-  } catch(e) { console.error('[poll]', e); }
+  } catch(e) {
+    console.error('[poll]', e);
+  }
 }
 
+// ── Rendu liste ──
 function renderCollectList(orders) {
-  const el      = document.getElementById('cash-list');
+  const el = document.getElementById('cash-list');
   const pending = orders.filter(o =>
     (o.paymentMethod === 'cash' || o.paymentMethod === 'tpe') &&
     o.paymentStatus === 'pending' &&
@@ -339,7 +384,9 @@ function renderCollectList(orders) {
   }
 
   el.innerHTML = pending.map(o => {
-    const albums = o.extraAlbums > 0 ? ` · +${o.extraAlbums} album${o.extraAlbums > 1 ? 's' : ''}` : '';
+    const albums = o.extraAlbums > 0
+      ? ` · +${o.extraAlbums} album${o.extraAlbums > 1 ? 's' : ''}`
+      : '';
     return `
     <div class="collect-item">
       <div class="ci-left">
@@ -357,25 +404,32 @@ function renderCollectList(orders) {
   }).join('');
 }
 
+// ── Stats ──
 function updateStats(orders) {
-  const totalCa = orders
-    .filter(o => o.paymentStatus === 'paid' || confirmedOrders.has(o.orderNumber))
-    .reduce((sum, o) => sum + parseFloat(o.amount), 0);
+  const confirmed = orders.filter(o =>
+    o.paymentStatus === 'paid' || confirmedOrders.has(o.orderNumber)
+  );
+  const ca = confirmed.reduce((sum, o) => sum + parseFloat(o.amount), 0);
   document.getElementById('stat-orders').textContent = orders.length;
-  document.getElementById('stat-ca').textContent     = `${totalCa.toFixed(0)} €`;
+  document.getElementById('stat-ca').textContent     = `${ca.toFixed(0)} €`;
 }
 
+// ── Confirmer encaissement ──
 async function confirmCash(btn, orderNumber) {
   btn.classList.add('done'); btn.textContent = 'Encaissé ✓'; btn.disabled = true;
   confirmedOrders.add(orderNumber);
-  await fetch('/api/vendor/confirm-cash', {
-    method:'POST', headers:{'Content-Type':'application/json','x-admin-key':ADMIN_KEY},
-    body: JSON.stringify({ orderNumber }),
-  });
+  try {
+    await fetch('/api/vendor/confirm-cash', {
+      method:  'POST',
+      headers: { 'Content-Type':'application/json', 'x-admin-key': ADMIN_KEY },
+      body:    JSON.stringify({ orderNumber }),
+    });
+  } catch(e) { console.error('[confirm]', e); }
   showToast('Paiement confirmé ✓');
   fetchOrders();
 }
 
+// ── Toggles ──
 function toggleStats() {
   statsVisible = !statsVisible;
   document.getElementById('stats-body').classList.toggle('hidden', !statsVisible);
@@ -387,10 +441,17 @@ function toggleCollect() {
   document.getElementById('collect-toggle').textContent = collectVisible ? 'Masquer' : 'Afficher';
 }
 
+// ── Toast ──
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── Auto-login si session existante ──
+if (ADMIN_KEY) {
+  showApp();
+  startPolling();
 }
 </script>
 </body>
