@@ -6,7 +6,6 @@ const cors      = require('cors');
 const helmet    = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path      = require('path');
-const { v4: uuidv4 } = require('uuid');
 const stripe    = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
 
 const tokens = require('./lib/tokens');
@@ -23,6 +22,9 @@ const PACKS = {
   pack3: { label: 'Pack Photo 3', amount: 35900 },
 };
 const ALBUM_PRICE = 5000; // 50€ en centimes
+
+// ── Stockage commandes en attente (mémoire serveur) ──
+const pendingOrders = [];
 
 // ── Middleware ──
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -101,12 +103,16 @@ app.post('/api/order/cash', async (req, res) => {
     customerPhone,
     equipageNumber,
     packId,
+    packLabel:     pack.label,
     extraAlbums:   parseInt(extraAlbums) || 0,
     amount:        (totalAmount / 100).toFixed(2),
     paymentMethod,
     paymentStatus: 'pending',
     vendorId:      v.payload.vendorId,
   };
+
+  // Stockage en mémoire pour le dashboard vendeur
+  pendingOrders.push(order);
 
   Promise.all([
     sheets.appendOrder(order).catch(e => console.error('[sheets]', e)),
@@ -148,6 +154,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
       customerPhone:   m.customerPhone || '',
       equipageNumber:  m.equipageNumber,
       packId:          m.packId,
+      packLabel:       pack.label,
       extraAlbums:     parseInt(m.extraAlbums) || 0,
       amount:          ((intent.amount_received || intent.amount) / 100).toFixed(2),
       paymentMethod:   'card',
@@ -155,6 +162,8 @@ app.post('/api/stripe/webhook', async (req, res) => {
       vendorId:        m.vendorId,
       stripePaymentId: intent.id,
     };
+
+    pendingOrders.push(order);
 
     Promise.all([
       sheets.appendOrder(order).catch(e => console.error('[sheets]', e)),
@@ -170,10 +179,17 @@ app.post('/api/stripe/webhook', async (req, res) => {
   res.json({ received: true });
 });
 
-// ── ROUTE 6 — Confirmer encaissement ──
+// ── ROUTE 6 — Liste commandes en attente ──
+app.get('/api/vendor/orders', adminAuth, (req, res) => {
+  res.json({ orders: pendingOrders });
+});
+
+// ── ROUTE 7 — Confirmer encaissement ──
 app.post('/api/vendor/confirm-cash', adminAuth, async (req, res) => {
   const { orderNumber } = req.body;
   if (!orderNumber) return res.status(400).json({ error: 'orderNumber requis' });
+  const order = pendingOrders.find(o => o.orderNumber === orderNumber);
+  if (order) order.paymentStatus = 'paid';
   try {
     await sheets.markPaid(orderNumber);
     res.json({ ok: true });
@@ -182,9 +198,11 @@ app.post('/api/vendor/confirm-cash', adminAuth, async (req, res) => {
   }
 });
 
-// ── ROUTE 7 — Stats vendeur ──
+// ── ROUTE 8 — Stats vendeur ──
 app.get('/api/vendor/stats', adminAuth, (req, res) => {
-  res.json({ ok: true });
+  const paid = pendingOrders.filter(o => o.paymentStatus === 'paid');
+  const ca   = paid.reduce((sum, o) => sum + parseFloat(o.amount), 0);
+  res.json({ orders: pendingOrders.length, paid: paid.length, ca: ca.toFixed(2) });
 });
 
 // ── Fallback ──
