@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Flashsport — Commande Photo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --ink:#0F1117; --ink-2:#374151; --ink-3:#6B7280; --ink-4:#9CA3AF;
+  --line:#E5E7EB; --line-2:#F3F4F6; --bg:#F7F8FA; --white:#FFFFFF;
+  --blue:#2563EB; --blue-2:#1D4ED8; --blue-tint:#EFF6FF; --blue-line:#DBEAFE;
+  --amber:#D97706; --amber-t:#FFFBEB; --amber-l:#FDE68A;
+  --green:#059669; --green-t:#ECFDF5; --green-l:#A7F3D0;
+  --red:#DC2626; --red-t:#FEF2F2; --red-l:#FECACA;
+  --r:10px; --r-sm:7px;
+}
+html { -webkit-font-smoothing:antialiased; }
+body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink); font-size:14px; line-height:1.5; min-height:100vh; }
+.page { max-width:400px; margin:0 auto; padding:0 16px 60px; }
+
+header { padding:36px 0 24px; display:flex; flex-direction:column; align-items:center; gap:5px; }
+.wordmark { display:flex; align-items:center; gap:9px; }
+.wm-icon { width:34px; height:34px; border-radius:8px; background:var(--ink); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.wm-name { font-size:16px; font-weight:700; color:var(--ink); letter-spacing:-.3px; }
+.wm-name em { font-style:normal; color:var(--blue); }
+.h-event { font-size:12px; color:var(--ink-3); }
+
+.timer { display:inline-flex; align-items:center; gap:7px; background:var(--amber-t); border:1px solid var(--amber-l); border-radius:999px; padding:5px 14px 5px 10px; margin-top:8px; }
+.t-dot { width:6px; height:6px; border-radius:50%; background:var(--amber); animation:blink 1.4s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.85)} }
+.t-label { font-size:11px; color:var(--amber); font-weight:500; }
+.t-count { font-size:12px; font-weight:700; color:var(--amber); font-variant-numeric:tabular-nums; min-width:32px; }
+.t-count.urgent { color:var(--red); }
+
+.ctx-note { background:var(--white); border:1px solid var(--line); border-left:3px solid var(--blue); border-radius:0 var(--r-sm) var(--r-sm) 0; padding:12px 14px; margin-bottom:10px; display:flex; align-items:flex-start; gap:10px; }
+.ctx-note svg { flex-shrink:0; margin-top:1px; }
+.ctx-note p { font-size:13px; color:var(--ink-2); line-height:1.55; }
+.ctx-note p strong { font-weight:600; color:var(--ink); }
+
+.card { background:var(--white); border:1px solid var(--line); border-radius:var(--r); margin-bottom:8px; overflow:hidden; }
+.cs { padding:18px 20px; border-bottom:1px solid var(--line-2); }
+.cs:last-child { border-bottom:none; }
+.st { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.6px; color:var(--ink-4); margin-bottom:14px; }
+
+.row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.field { margin-bottom:10px; }
+.field:last-child { margin-bottom:0; }
+.row2 .field { margin-bottom:0; }
+label { display:block; font-size:12px; font-weight:500; color:var(--ink-3); margin-bottom:5px; }
+input { width:100%; height:40px; border:1px solid var(--line); border-radius:var(--r-sm); padding:0 12px; font-family:'Inter',sans-serif; font-size:14px; color:var(--ink); background:var(--white); outline:none; transition:border-color .15s,box-shadow .15s; -webkit-appearance:none; }
+input::placeholder { color:#D1D5DB; }
+input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,.08); }
+input.err { border-color:var(--red); }
+.err-msg { font-size:11px; color:var(--red); margin-top:4px; display:none; }
+.field.eq input { font-weight:600; letter-spacing:.5px; }
+.field.eq input:focus { border-color:var(--amber); box-shadow:0 0 0 3px rgba(217,119,6,.08); }
+
+/* ── PACKS ── */
+.pack-list { display:flex; flex-direction:column; gap:8px; }
+.pack { border:1.5px solid var(--line); border-radius:var(--r-sm); cursor:pointer; background:var(--white); transition:border-color .15s,background .15s; user-select:none; overflow:hidden; }
+.pack:hover { border-color:#93C5FD; }
+.pack.sel { border-color:var(--blue); background:var(--blue-tint); }
+.pack-main { display:flex; align-items:flex-start; gap:12px; padding:13px 14px; }
+.radio { width:18px; height:18px; border-radius:50%; border:1.5px solid var(--line); flex-shrink:0; transition:all .15s; position:relative; background:var(--white); margin-top:2px; }
+.pack.sel .radio { border-color:var(--blue); background:var(--blue); }
+.pack.sel .radio::after { content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:6px; height:6px; border-radius:50%; background:var(--white); }
+.pack-info { flex:1; min-width:0; }
+.pack-top { display:flex; align-items:center; gap:7px; margin-bottom:3px; flex-wrap:wrap; }
+.pack-name { font-size:14px; font-weight:600; }
+.pack-tag { font-size:10px; font-weight:600; color:var(--blue); background:var(--blue-tint); border:1px solid var(--blue-line); border-radius:4px; padding:1px 6px; }
+.pack-includes { display:flex; flex-direction:column; gap:2px; }
+.pack-inc-line { font-size:12px; color:var(--ink-3); display:flex; align-items:center; gap:5px; }
+.pack-inc-line::before { content:''; width:4px; height:4px; border-radius:50%; background:var(--ink-4); flex-shrink:0; }
+.pack-price-col { text-align:right; flex-shrink:0; }
+.pack-price { font-size:17px; font-weight:700; color:var(--ink); display:block; }
+.pack.sel .pack-price { color:var(--blue); }
+
+/* ── ALBUM COUNTER ── */
+.album-section { margin-top:12px; padding:14px; background:var(--white); border:1.5px solid var(--line); border-radius:var(--r-sm); display:none; }
+.album-section.show { display:block; }
+.album-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.album-title { font-size:13px; font-weight:600; color:var(--ink); }
+.album-price-tag { font-size:12px; color:var(--ink-3); background:var(--line-2); border-radius:4px; padding:2px 8px; }
+.album-desc { font-size:12px; color:var(--ink-3); margin-bottom:12px; }
+.counter { display:flex; align-items:center; gap:12px; }
+.counter-btn { width:34px; height:34px; border-radius:var(--r-sm); border:1.5px solid var(--line); background:var(--white); font-size:20px; font-weight:300; color:var(--ink-2); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; flex-shrink:0; line-height:1; }
+.counter-btn:hover:not(:disabled) { border-color:var(--blue); color:var(--blue); background:var(--blue-tint); }
+.counter-btn:disabled { opacity:.3; cursor:not-allowed; }
+.counter-val { font-size:20px; font-weight:700; color:var(--ink); min-width:28px; text-align:center; }
+.counter-extra { margin-left:auto; font-size:13px; color:var(--ink-3); }
+.counter-extra strong { color:var(--blue); font-weight:600; }
+
+/* ── PAYMENT ── */
+.pay-opts { display:flex; flex-direction:column; gap:8px; }
+.pay-opt { border:1px solid var(--line); border-radius:var(--r-sm); padding:12px 14px; cursor:pointer; display:flex; align-items:center; gap:12px; background:var(--white); transition:border-color .15s,background .15s; user-select:none; }
+.pay-opt:hover { border-color:#93C5FD; }
+.pay-opt.sel { border-color:var(--blue); background:var(--blue-tint); }
+.pay-opt-icon { flex-shrink:0; width:36px; height:36px; border-radius:8px; background:var(--line-2); display:flex; align-items:center; justify-content:center; transition:background .15s; }
+.pay-opt.sel .pay-opt-icon { background:var(--blue-line); }
+.pay-opt-body { flex:1; }
+.pay-title { font-size:13px; font-weight:600; color:var(--ink); display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.pay-sub { font-size:11px; color:var(--ink-3); margin-top:1px; }
+.pay-badge { font-size:10px; font-weight:600; color:var(--green); background:var(--green-t); border:1px solid var(--green-l); border-radius:4px; padding:1px 6px; }
+
+#stripe-wrap { margin-top:12px; display:none; }
+#stripe-wrap.show { display:block; }
+#card-element { border:1px solid var(--line); border-radius:var(--r-sm); padding:11px 12px; background:var(--white); transition:border-color .15s,box-shadow .15s; }
+#card-element.focused { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,.08); }
+#card-errors { font-size:12px; color:var(--red); margin-top:6px; min-height:16px; }
+
+/* ── SUMMARY ── */
+.sum-lines { margin-bottom:16px; display:flex; flex-direction:column; gap:6px; }
+.sum-line { display:flex; justify-content:space-between; font-size:13px; }
+.sum-line .sl-label { color:var(--ink-3); }
+.sum-line .sl-val { font-weight:500; color:var(--ink); }
+.sum-divider { border:none; border-top:1px solid var(--line-2); margin:4px 0; }
+.sum-total { display:flex; justify-content:space-between; align-items:center; }
+.sum-total-label { font-size:14px; font-weight:600; }
+.sum-total-price { font-size:28px; font-weight:700; letter-spacing:-1px; line-height:1; }
+.sum-total-price span { font-size:14px; font-weight:400; color:var(--ink-3); }
+.sum-empty { font-size:13px; color:var(--ink-4); font-style:italic; }
+
+.btn { width:100%; height:44px; background:var(--blue); border:none; border-radius:var(--r-sm); color:#fff; font-family:'Inter',sans-serif; font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:background .15s,transform .1s; margin-top:14px; }
+.btn:hover:not(:disabled) { background:var(--blue-2); }
+.btn:active { transform:scale(.99); }
+.btn:disabled { background:#93C5FD; cursor:not-allowed; }
+.spinner { width:18px; height:18px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:none; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.btn.loading .spinner { display:block; }
+.btn.loading .btn-label { display:none; }
+
+.trust { display:flex; justify-content:center; gap:16px; padding:12px 0 0; flex-wrap:wrap; }
+.trust-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-4); }
+
+/* ── CONFIRM ── */
+.confirm-wrap { display:flex; flex-direction:column; align-items:center; padding-top:8px; gap:10px; text-align:center; }
+.status-badge { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:4px; }
+.status-badge.green { background:var(--green-t); border:1px solid var(--green-l); }
+.status-badge.amber { background:var(--amber-t); border:1px solid var(--amber-l); }
+.status-badge.blue  { background:var(--blue-tint); border:1px solid var(--blue-line); }
+.status-badge.red   { background:var(--red-t); border:1px solid var(--red-l); }
+.c-title { font-size:20px; font-weight:700; letter-spacing:-.3px; }
+.c-sub { font-size:13px; color:var(--ink-3); line-height:1.6; max-width:300px; }
+.c-sub strong { color:var(--ink-2); font-weight:500; }
+.detail-card { width:100%; background:var(--white); border:1px solid var(--line); border-radius:var(--r); overflow:hidden; text-align:left; }
+.dr { display:flex; justify-content:space-between; align-items:center; padding:11px 18px; border-bottom:1px solid var(--line-2); font-size:13px; }
+.dr:last-child { border-bottom:none; }
+.dk { color:var(--ink-3); }
+.dv { font-weight:500; }
+.dv.blue  { color:var(--blue); }
+.dv.green { color:var(--green); }
+.dv.amber { color:var(--amber); }
+.dv.sm    { font-size:11px; font-weight:400; color:var(--ink-4); }
+.info-box { width:100%; border-radius:var(--r-sm); padding:13px 15px; display:flex; align-items:flex-start; gap:10px; text-align:left; }
+.info-box svg { flex-shrink:0; margin-top:1px; }
+.info-box p { font-size:13px; line-height:1.55; }
+.info-box p strong { font-weight:600; }
+.info-box.blue  { background:var(--blue-tint); border:1px solid var(--blue-line); }
+.info-box.blue  p { color:#1E40AF; }
+.info-box.amber { background:var(--amber-t); border:1px solid var(--amber-l); }
+.info-box.amber p { color:#92400E; }
+.info-box.red   { background:var(--red-t); border:1px solid var(--red-l); }
+.info-box.red   p { color:#991B1B; }
+.stand-display { width:100%; border-radius:var(--r); padding:22px; text-align:center; }
+.stand-display.amber { background:var(--amber-t); border:1px solid var(--amber-l); }
+.stand-display.blue  { background:var(--blue-tint); border:1px solid var(--blue-line); }
+.sd-lbl { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.7px; margin-bottom:8px; }
+.stand-display.amber .sd-lbl { color:var(--amber); }
+.stand-display.blue  .sd-lbl { color:var(--blue); }
+.sd-num { font-size:52px; font-weight:700; letter-spacing:-3px; line-height:1; }
+.stand-display.amber .sd-num { color:#92400E; }
+.stand-display.blue  .sd-num { color:#1E40AF; }
+.sd-ttc { font-size:12px; margin-top:6px; }
+.stand-display.amber .sd-ttc { color:var(--amber); }
+.stand-display.blue  .sd-ttc { color:var(--blue); }
+
+.view { display:none; }
+.view.on { display:block; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="wordmark">
+      <div class="wm-icon">
+        <svg width="18" height="20" viewBox="0 0 18 20" fill="none">
+          <path d="M10 1L1 11h8l-1 8 9-10h-8l1-8z" fill="#fff" stroke="#fff" stroke-width=".4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="wm-name">Flash<em>Sport</em></div>
+    </div>
+    <div class="h-event">Pack photo souvenir &mdash; 4L Trophy 2025</div>
+    <div class="timer">
+      <div class="t-dot"></div>
+      <span class="t-label">Lien valable&nbsp;</span>
+      <span class="t-count" id="tc">15:00</span>
+    </div>
+  </header>
+
+  <!-- ═══ FORM ═══ -->
+  <div id="view-form" class="view on">
+    <div class="ctx-note">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="7" stroke="#2563EB" stroke-width="1.3"/>
+        <path d="M8 7v5M8 5v.5" stroke="#2563EB" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <p>Vous êtes au stand <strong>Flashsport</strong>. Remplissez ce formulaire pour réserver votre pack photo et récupérer votre autocollant prioritaire.</p>
+    </div>
+
+    <div class="card">
+
+      <!-- Infos personnelles -->
+      <div class="cs">
+        <div class="st">Vos informations</div>
+        <div class="row2">
+          <div class="field"><label for="fname">Prénom</label><input id="fname" type="text" placeholder="Jean" autocomplete="given-name"></div>
+          <div class="field"><label for="lname">Nom</label><input id="lname" type="text" placeholder="Dupont" autocomplete="family-name"></div>
+        </div>
+        <div class="field">
+          <label for="email">Adresse e-mail</label>
+          <input id="email" type="email" placeholder="jean@email.com" autocomplete="email">
+          <div class="err-msg" id="email-err">Adresse e-mail invalide</div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="phone">Téléphone</label><input id="phone" type="tel" placeholder="+33 6 …" autocomplete="tel"></div>
+          <div class="field eq"><label for="equipage">N° équipage</label><input id="equipage" type="text" placeholder="EQ-0423"></div>
+        </div>
+      </div>
+
+      <!-- Packs -->
+      <div class="cs">
+        <div class="st">Choisir un pack</div>
+        <div class="pack-list">
+
+          <div class="pack" data-id="pack1" data-base="229" onclick="selPack(this)">
+            <div class="pack-main">
+              <div class="radio"></div>
+              <div class="pack-info">
+                <div class="pack-top"><span class="pack-name">Pack Photo 1</span></div>
+                <div class="pack-includes">
+                  <div class="pack-inc-line">Photos digitales (50 minimum)</div>
+                  <div class="pack-inc-line">Livraison par e-mail</div>
+                </div>
+              </div>
+              <div class="pack-price-col">
+                <span class="pack-price">229 €</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pack" data-id="pack2" data-base="329" onclick="selPack(this)">
+            <div class="pack-main">
+              <div class="radio"></div>
+              <div class="pack-info">
+                <div class="pack-top"><span class="pack-name">Pack Photo 2</span><span class="pack-tag">Populaire</span></div>
+                <div class="pack-includes">
+                  <div class="pack-inc-line">Photos digitales (50 minimum)</div>
+                  <div class="pack-inc-line">1 album photo papier</div>
+                </div>
+              </div>
+              <div class="pack-price-col">
+                <span class="pack-price">329 €</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pack" data-id="pack3" data-base="359" onclick="selPack(this)">
+            <div class="pack-main">
+              <div class="radio"></div>
+              <div class="pack-info">
+                <div class="pack-top"><span class="pack-name">Pack Photo 3</span></div>
+                <div class="pack-includes">
+                  <div class="pack-inc-line">Photos digitales (50 minimum)</div>
+                  <div class="pack-inc-line">2 albums photo papier</div>
+                </div>
+              </div>
+              <div class="pack-price-col">
+                <span class="pack-price">359 €</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Albums supplémentaires -->
+        <div class="album-section" id="album-section">
+          <div class="album-header">
+            <div class="album-title">Albums papier supplémentaires</div>
+            <div class="album-price-tag">50 € / album</div>
+          </div>
+          <div class="album-desc">Ajoutez autant d'albums que vous souhaitez à votre commande.</div>
+          <div class="counter">
+            <button class="counter-btn" id="album-minus" onclick="changeAlbum(-1)" disabled>−</button>
+            <span class="counter-val" id="album-val">0</span>
+            <button class="counter-btn" id="album-plus" onclick="changeAlbum(1)">+</button>
+            <div class="counter-extra" id="album-extra" style="display:none;">
+              + <strong id="album-extra-val">0 €</strong>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Mode de paiement -->
+      <div class="cs">
+        <div class="st">Mode de paiement</div>
+        <div class="pay-opts">
+          <div class="pay-opt sel" id="pay-online" onclick="selPay('online')">
+            <div class="pay-opt-icon">
+              <svg width="20" height="14" viewBox="0 0 22 16" fill="none">
+                <rect x=".75" y=".75" width="20.5" height="14.5" rx="2.25" stroke="#2563EB" stroke-width="1.3"/>
+                <rect x=".75" y="3.75" width="20.5" height="3" fill="#DBEAFE"/>
+                <rect x="3" y="9" width="4" height="2" rx="1" fill="#2563EB"/>
+              </svg>
+            </div>
+            <div class="pay-opt-body">
+              <div class="pay-title">Apple Pay / Google Pay <span class="pay-badge">Rapide</span></div>
+              <div class="pay-sub">Paiement en ligne sécurisé · Stripe</div>
+            </div>
+          </div>
+          <div class="pay-opt" id="pay-tpe" onclick="selPay('tpe')">
+            <div class="pay-opt-icon">
+              <svg width="16" height="18" viewBox="0 0 18 20" fill="none">
+                <rect x=".75" y=".75" width="16.5" height="18.5" rx="2.25" stroke="#6B7280" stroke-width="1.3"/>
+                <rect x="3" y="3" width="12" height="4" rx="1" fill="#E5E7EB"/>
+                <circle cx="6"  cy="11" r="1" fill="#6B7280"/>
+                <circle cx="9"  cy="11" r="1" fill="#6B7280"/>
+                <circle cx="12" cy="11" r="1" fill="#6B7280"/>
+                <circle cx="6"  cy="14" r="1" fill="#6B7280"/>
+                <circle cx="9"  cy="14" r="1" fill="#6B7280"/>
+                <circle cx="12" cy="14" r="1" fill="#6B7280"/>
+                <circle cx="6"  cy="17" r="1" fill="#6B7280"/>
+                <circle cx="9"  cy="17" r="1" fill="#6B7280"/>
+                <circle cx="12" cy="17" r="1" fill="#6B7280"/>
+              </svg>
+            </div>
+            <div class="pay-opt-body">
+              <div class="pay-title">Carte bancaire via TPE</div>
+              <div class="pay-sub">Régler sur le terminal au stand</div>
+            </div>
+          </div>
+          <div class="pay-opt" id="pay-cash" onclick="selPay('cash')">
+            <div class="pay-opt-icon">
+              <svg width="20" height="12" viewBox="0 0 22 14" fill="none">
+                <rect x=".75" y=".75" width="20.5" height="12.5" rx="2.25" stroke="#6B7280" stroke-width="1.3"/>
+                <circle cx="11" cy="7" r="2.5" stroke="#6B7280" stroke-width="1.3"/>
+                <circle cx="4"  cy="7" r="1" fill="#6B7280"/>
+                <circle cx="18" cy="7" r="1" fill="#6B7280"/>
+              </svg>
+            </div>
+            <div class="pay-opt-body">
+              <div class="pay-title">Espèces</div>
+              <div class="pay-sub">Régler en cash au stand</div>
+            </div>
+          </div>
+        </div>
+        <div id="stripe-wrap" class="show">
+          <div id="card-element"></div>
+          <div id="card-errors"></div>
+        </div>
+      </div>
+
+      <!-- Récap + CTA -->
+      <div class="cs">
+        <div id="sum-lines">
+          <div class="sum-empty">Sélectionnez un pack pour voir le total.</div>
+        </div>
+        <button class="btn" id="submit-btn" onclick="submitOrder()" disabled>
+          <span class="btn-label">Valider la commande</span>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="btn-label">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="spinner"></div>
+        </button>
+        <div id="submit-error" style="font-size:12px;color:var(--red);margin-top:8px;text-align:center;"></div>
+      </div>
+
+    </div>
+
+    <div class="trust">
+      <div class="trust-item">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M6.5 1L2 3v4c0 2.76 2 5 4.5 5S11 9.76 11 7V3L6.5 1z" stroke="#9CA3AF" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M4.5 6.5l1.5 1.5 2.5-2.5" stroke="#9CA3AF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Paiement sécurisé
+      </div>
+      <div class="trust-item">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <rect x="1" y="2.5" width="11" height="8" rx="1.5" stroke="#9CA3AF" stroke-width="1.2"/>
+          <path d="M1 5h11M4 8.5h2" stroke="#9CA3AF" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        Bon de commande par e-mail
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CONFIRM ONLINE ═══ -->
+  <div id="view-confirm-online" class="view">
+    <div class="confirm-wrap">
+      <div class="status-badge green">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12l5 5L19 7" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="c-title">Commande confirmée</div>
+      <div class="c-sub">Votre bon de commande a été envoyé à <strong id="c-email"></strong></div>
+      <div class="detail-card">
+        <div class="dr"><span class="dk">Équipage</span><span class="dv blue" id="c-eq"></span></div>
+        <div class="dr"><span class="dk">Pack</span><span class="dv" id="c-pack"></span></div>
+        <div class="dr" id="c-albums-row"><span class="dk">Albums suppl.</span><span class="dv" id="c-albums"></span></div>
+        <div class="dr"><span class="dk">Total</span><span class="dv" id="c-amount"></span></div>
+        <div class="dr"><span class="dk">Paiement</span><span class="dv green">Confirmé en ligne</span></div>
+        <div class="dr"><span class="dk">N° commande</span><span class="dv sm" id="c-num"></span></div>
+      </div>
+      <div class="info-box blue">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="7" stroke="#2563EB" stroke-width="1.2"/>
+          <path d="M8 7v5M8 5v.5" stroke="#2563EB" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <p>Votre autocollant prioritaire vous sera remis au stand <strong>Flashsport</strong>. Bonne course !</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CONFIRM TPE ═══ -->
+  <div id="view-confirm-tpe" class="view">
+    <div class="confirm-wrap">
+      <div class="status-badge blue">
+        <svg width="16" height="18" viewBox="0 0 18 20" fill="none">
+          <rect x=".75" y=".75" width="16.5" height="18.5" rx="2.25" stroke="#2563EB" stroke-width="1.4"/>
+          <rect x="3" y="3" width="12" height="4" rx="1" fill="#DBEAFE"/>
+          <circle cx="6"  cy="12" r="1.2" fill="#2563EB"/>
+          <circle cx="9"  cy="12" r="1.2" fill="#2563EB"/>
+          <circle cx="12" cy="12" r="1.2" fill="#2563EB"/>
+          <circle cx="6"  cy="16" r="1.2" fill="#2563EB"/>
+          <circle cx="9"  cy="16" r="1.2" fill="#2563EB"/>
+          <circle cx="12" cy="16" r="1.2" fill="#2563EB"/>
+        </svg>
+      </div>
+      <div class="c-title">Réservation effectuée</div>
+      <div class="c-sub">Montrez cet écran au stand <strong>Flashsport</strong> pour régler par carte sur le terminal.</div>
+      <div class="stand-display blue">
+        <div class="sd-lbl">Montant à régler par carte</div>
+        <div class="sd-num" id="tpe-num">-- €</div>
+        <div class="sd-ttc" id="tpe-detail"></div>
+      </div>
+      <div class="detail-card">
+        <div class="dr"><span class="dk">Équipage</span><span class="dv blue" id="tpe-eq"></span></div>
+        <div class="dr"><span class="dk">Pack</span><span class="dv" id="tpe-pk"></span></div>
+        <div class="dr" id="tpe-albums-row"><span class="dk">Albums suppl.</span><span class="dv" id="tpe-albums"></span></div>
+        <div class="dr"><span class="dk">Paiement</span><span class="dv blue">CB via TPE au stand</span></div>
+      </div>
+      <div class="info-box blue">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 1L1.07 14h13.86L8 1z" stroke="#2563EB" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M8 6v3M8 11v.5" stroke="#2563EB" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <p>Rendez-vous au <strong>stand Flashsport · Zone départ</strong> pour régler sur le terminal et récupérer votre autocollant.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CONFIRM CASH ═══ -->
+  <div id="view-confirm-cash" class="view">
+    <div class="confirm-wrap">
+      <div class="status-badge amber">
+        <svg width="20" height="12" viewBox="0 0 22 14" fill="none">
+          <rect x=".75" y=".75" width="20.5" height="12.5" rx="2.25" stroke="#D97706" stroke-width="1.4"/>
+          <circle cx="11" cy="7" r="2.5" stroke="#D97706" stroke-width="1.4"/>
+          <circle cx="4"  cy="7" r="1.2" fill="#D97706"/>
+          <circle cx="18" cy="7" r="1.2" fill="#D97706"/>
+        </svg>
+      </div>
+      <div class="c-title">Réservation effectuée</div>
+      <div class="c-sub">Montrez cet écran au stand <strong>Flashsport</strong> pour régler en espèces.</div>
+      <div class="stand-display amber">
+        <div class="sd-lbl">Montant à régler en espèces</div>
+        <div class="sd-num" id="cash-num">-- €</div>
+        <div class="sd-ttc" id="cash-detail"></div>
+      </div>
+      <div class="detail-card">
+        <div class="dr"><span class="dk">Équipage</span><span class="dv blue" id="cash-eq"></span></div>
+        <div class="dr"><span class="dk">Pack</span><span class="dv" id="cash-pk"></span></div>
+        <div class="dr" id="cash-albums-row"><span class="dk">Albums suppl.</span><span class="dv" id="cash-albums"></span></div>
+        <div class="dr"><span class="dk">Paiement</span><span class="dv amber">Espèces au stand</span></div>
+      </div>
+      <div class="info-box amber">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 1L1.07 14h13.86L8 1z" stroke="#D97706" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M8 6v3M8 11v.5" stroke="#D97706" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <p>Rendez-vous au <strong>stand Flashsport · Zone départ</strong> pour régler en espèces et récupérer votre autocollant.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ EXPIRED ═══ -->
+  <div id="view-expired" class="view">
+    <div class="confirm-wrap">
+      <div class="status-badge red">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <circle cx="11" cy="11" r="9" stroke="#DC2626" stroke-width="1.4"/>
+          <path d="M11 7v5M11 14v.5" stroke="#DC2626" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="c-title">Lien expiré</div>
+      <div class="c-sub">Ce lien n'est plus valide — il a expiré ou a déjà été utilisé.</div>
+      <div class="info-box red">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="7" stroke="#DC2626" stroke-width="1.2"/>
+          <path d="M8 5v4M8 11v.5" stroke="#DC2626" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <p>Revenez au <strong>stand Flashsport · Zone départ</strong> pour obtenir un nouveau lien.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ── Config packs ───────────────────────────────────────────────────────────
+const PACKS = {
+  pack1: { label:'Pack Photo 1', base:229 },
+  pack2: { label:'Pack Photo 2', base:329 },
+  pack3: { label:'Pack Photo 3', base:359 },
+};
+const ALBUM_PRICE = 50;
+
+// ── State ──────────────────────────────────────────────────────────────────
+let TOKEN        = null;
+let selectedPack = null;
+let extraAlbums  = 0;
+let selectedPay  = 'online';
+let stripeClient = null;
+let cardElement  = null;
+let timerInterval = null;
+
+// ── Init ───────────────────────────────────────────────────────────────────
+(async function init() {
+  const params = new URLSearchParams(window.location.search);
+  TOKEN = params.get('t');
+
+  // Pas de token → lien expiré
+  if (!TOKEN) {
+    show('view-expired');
+    return;
+  }
+
+  // Valide le token côté serveur
+  try {
+    const res  = await fetch(`/api/order/validate?t=${TOKEN}`);
+    const data = await res.json();
+
+    if (!data.ok) {
+      show('view-expired');
+      return;
+    }
+
+    // Démarre le timer à partir de l'expiration JWT
+    const secs = data.payload
+      ? Math.max(0, Math.floor((data.payload.exp * 1000 - Date.now()) / 1000))
+      : 15 * 60;
+    startTimer(secs);
+
+  } catch (e) {
+    // Serveur inaccessible en dev → on affiche quand même le form
+    startTimer(15 * 60);
+  }
+
+  // Init Stripe si clé dispo
+  const STRIPE_KEY = window.STRIPE_PK || '';
+  if (STRIPE_KEY && STRIPE_KEY !== 'pk_test_placeholder') {
+    try {
+      stripeClient = Stripe(STRIPE_KEY);
+      const els = stripeClient.elements();
+      cardElement = els.create('card', {
+        style: {
+          base:    { fontFamily:"'Inter',sans-serif", fontSize:'14px', color:'#0F1117', '::placeholder':{ color:'#D1D5DB' } },
+          invalid: { color:'#DC2626' },
+        },
+      });
+      cardElement.mount('#card-element');
+      cardElement.on('focus',  () => document.getElementById('card-element').classList.add('focused'));
+      cardElement.on('blur',   () => document.getElementById('card-element').classList.remove('focused'));
+      cardElement.on('change', e => { document.getElementById('card-errors').textContent = e.error?.message || ''; });
+    } catch (_) {}
+  }
+
+  // Affiche le formulaire — PAS de spinner infini
+  show('view-form');
+})();
+
+// ── Timer ──────────────────────────────────────────────────────────────────
+function startTimer(secs) {
+  const el = document.getElementById('tc');
+  function tick() {
+    if (secs <= 0) {
+      el.textContent = '00:00';
+      el.classList.add('urgent');
+      clearInterval(timerInterval);
+      show('view-expired');
+      return;
+    }
+    secs--;
+    el.textContent = `${String(Math.floor(secs/60)).padStart(2,'0')}:${String(secs%60).padStart(2,'0')}`;
+    if (secs < 60) el.classList.add('urgent');
+  }
+  tick();
+  timerInterval = setInterval(tick, 1000);
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+function getVal(id) { return document.getElementById(id).value.trim(); }
+function setLoading(on) {
+  const b = document.getElementById('submit-btn');
+  b.classList.toggle('loading', on);
+  b.disabled = on;
+}
+function totalPrice() {
+  return selectedPack ? selectedPack.base + extraAlbums * ALBUM_PRICE : 0;
+}
+
+// ── Pack selector ──────────────────────────────────────────────────────────
+function selPack(el) {
+  document.querySelectorAll('.pack').forEach(p => p.classList.remove('sel'));
+  el.classList.add('sel');
+  const id = el.dataset.id;
+  selectedPack = { id, ...PACKS[id] };
+
+  // Reset albums
+  extraAlbums = 0;
+  document.getElementById('album-val').textContent = '0';
+  document.getElementById('album-minus').disabled  = true;
+  document.getElementById('album-extra').style.display = 'none';
+
+  // Affiche la section albums
+  document.getElementById('album-section').classList.add('show');
+
+  // Active le bouton
+  document.getElementById('submit-btn').disabled = false;
+
+  updateSummary();
+}
+
+// ── Album counter ──────────────────────────────────────────────────────────
+function changeAlbum(delta) {
+  extraAlbums = Math.max(0, extraAlbums + delta);
+  document.getElementById('album-val').textContent   = extraAlbums;
+  document.getElementById('album-minus').disabled     = extraAlbums === 0;
+
+  const extraEl    = document.getElementById('album-extra');
+  const extraValEl = document.getElementById('album-extra-val');
+  if (extraAlbums > 0) {
+    extraEl.style.display    = 'flex';
+    extraValEl.textContent   = `${extraAlbums * ALBUM_PRICE} €`;
+  } else {
+    extraEl.style.display = 'none';
+  }
+  updateSummary();
+}
+
+// ── Summary ────────────────────────────────────────────────────────────────
+function updateSummary() {
+  if (!selectedPack) return;
+  const total = totalPrice();
+  let html = `<div class="sum-lines">
+    <div class="sum-line"><span class="sl-label">${selectedPack.label}</span><span class="sl-val">${selectedPack.base} €</span></div>`;
+  if (extraAlbums > 0) {
+    html += `<div class="sum-line"><span class="sl-label">${extraAlbums} album${extraAlbums > 1 ? 's' : ''} suppl.</span><span class="sl-val">${extraAlbums * ALBUM_PRICE} €</span></div>`;
+  }
+  html += `</div>
+    <hr class="sum-divider">
+    <div class="sum-total">
+      <div class="sum-total-label">Total TTC</div>
+      <div class="sum-total-price">${total} <span>€</span></div>
+    </div>`;
+  document.getElementById('sum-lines').innerHTML = html;
+}
+
+// ── Pay selector ───────────────────────────────────────────────────────────
+function selPay(type) {
+  selectedPay = type;
+  ['online','tpe','cash'].forEach(t => {
+    document.getElementById(`pay-${t}`).classList.toggle('sel', t === type);
+  });
+  document.getElementById('stripe-wrap').classList.toggle('show', type === 'online');
+}
+
+// ── Validation ─────────────────────────────────────────────────────────────
+function validate() {
+  let ok = true;
+  ['fname','lname','email','equipage'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('err');
+    if (!el.value.trim()) { el.classList.add('err'); ok = false; }
+  });
+  const emailEl = document.getElementById('email');
+  const errEl   = document.getElementById('email-err');
+  if (emailEl.value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim())) {
+    emailEl.classList.add('err');
+    errEl.style.display = 'block';
+    ok = false;
+  } else {
+    errEl.style.display = 'none';
+  }
+  if (!selectedPack) {
+    document.getElementById('submit-error').textContent = 'Veuillez sélectionner un pack.';
+    ok = false;
+  }
+  return ok;
+}
+
+// ── Submit ─────────────────────────────────────────────────────────────────
+async function submitOrder() {
+  if (!validate()) return;
+  document.getElementById('submit-error').textContent = '';
+  setLoading(true);
+
+  const body = {
+    token:          TOKEN,
+    packId:         selectedPack.id,
+    extraAlbums,
+    customerName:   `${getVal('fname')} ${getVal('lname')}`,
+    customerEmail:  getVal('email'),
+    customerPhone:  getVal('phone'),
+    equipageNumber: getVal('equipage'),
+  };
+
+  try {
+    if (selectedPay === 'online') {
+      await submitOnline(body);
+    } else {
+      await submitStand(body, selectedPay);
+    }
+  } catch(e) {
+    document.getElementById('submit-error').textContent = e.message || 'Une erreur est survenue.';
+    setLoading(false);
+  }
+}
+
+async function submitOnline(body) {
+  if (!stripeClient || !cardElement) {
+    throw new Error('Paiement en ligne non disponible. Choisissez un autre mode.');
+  }
+  const piRes  = await fetch('/api/order/payment-intent', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body),
+  });
+  const piData = await piRes.json();
+  if (!piRes.ok) throw new Error(piData.error || 'Erreur paiement');
+
+  const { error } = await stripeClient.confirmCardPayment(piData.clientSecret, {
+    payment_method: { card: cardElement },
+  });
+  if (error) throw new Error(error.message);
+
+  fillConfirm('online', body);
+  clearInterval(timerInterval);
+  show('view-confirm-online');
+}
+
+async function submitStand(body, method) {
+  const res  = await fetch('/api/order/cash', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ ...body, paymentMethod: method }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+  fillConfirm(method, body);
+  clearInterval(timerInterval);
+  show(`view-confirm-${method}`);
+}
+
+// ── Fill confirmation screens ──────────────────────────────────────────────
+function fillConfirm(method, body) {
+  const total      = totalPrice();
+  const albumsText = extraAlbums > 0
+    ? `${extraAlbums} album${extraAlbums > 1 ? 's' : ''} (+${extraAlbums * ALBUM_PRICE} €)`
+    : null;
+  const orderNum = `FS-${Date.now()}-${body.equipageNumber.replace(/\W/g,'')}`;
+  const detailText = extraAlbums > 0
+    ? `${selectedPack.label} + ${extraAlbums} album${extraAlbums > 1 ? 's' : ''} · TTC`
+    : `${selectedPack.label} · TTC`;
+
+  if (method === 'online') {
+    document.getElementById('c-email').textContent   = body.customerEmail;
+    document.getElementById('c-eq').textContent      = body.equipageNumber;
+    document.getElementById('c-pack').textContent    = selectedPack.label;
+    document.getElementById('c-amount').textContent  = `${total} €`;
+    document.getElementById('c-num').textContent     = orderNum;
+    const albumsRow = document.getElementById('c-albums-row');
+    if (albumsText) { document.getElementById('c-albums').textContent = albumsText; albumsRow.style.display='flex'; }
+    else { albumsRow.style.display = 'none'; }
+
+  } else if (method === 'tpe') {
+    document.getElementById('tpe-num').textContent    = `${total} €`;
+    document.getElementById('tpe-detail').textContent = detailText;
+    document.getElementById('tpe-eq').textContent     = body.equipageNumber;
+    document.getElementById('tpe-pk').textContent     = selectedPack.label;
+    const albumsRow = document.getElementById('tpe-albums-row');
+    if (albumsText) { document.getElementById('tpe-albums').textContent = albumsText; albumsRow.style.display='flex'; }
+    else { albumsRow.style.display = 'none'; }
+
+  } else {
+    document.getElementById('cash-num').textContent    = `${total} €`;
+    document.getElementById('cash-detail').textContent = detailText;
+    document.getElementById('cash-eq').textContent     = body.equipageNumber;
+    document.getElementById('cash-pk').textContent     = selectedPack.label;
+    const albumsRow = document.getElementById('cash-albums-row');
+    if (albumsText) { document.getElementById('cash-albums').textContent = albumsText; albumsRow.style.display='flex'; }
+    else { albumsRow.style.display = 'none'; }
+  }
+}
+</script>
+</body>
+</html>

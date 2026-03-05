@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Flashsport — Stand</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --ink:#0F1117;--ink-2:#374151;--ink-3:#6B7280;--ink-4:#9CA3AF;
+  --line:#E5E7EB;--bg:#F7F8FA;--white:#FFFFFF;
+  --blue:#2563EB;--blue-t:#EFF6FF;--blue-l:#DBEAFE;
+  --amber:#D97706;--amber-t:#FFFBEB;--amber-l:#FDE68A;
+  --green:#059669;--green-t:#ECFDF5;--green-l:#A7F3D0;
+  --red:#DC2626;--red-t:#FEF2F2;--red-l:#FECACA;
+  --r:10px;--r-sm:7px;
+}
+html{-webkit-font-smoothing:antialiased;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh;}
+.page{max-width:400px;margin:0 auto;padding:0 16px 60px;}
+
+header{padding:24px 0 20px;display:flex;align-items:center;justify-content:space-between;}
+.wm{display:flex;align-items:center;gap:8px;}
+.wm-icon{width:30px;height:30px;border-radius:7px;background:var(--ink);display:flex;align-items:center;justify-content:center;}
+.wm-name{font-size:15px;font-weight:700;}
+.wm-name em{font-style:normal;color:var(--blue);}
+.header-right{display:flex;align-items:center;gap:8px;}
+.badge-vendor{font-size:11px;font-weight:600;background:var(--ink);color:#fff;border-radius:4px;padding:3px 8px;display:none;}
+.logout-btn{height:30px;padding:0 12px;background:var(--white);border:1px solid var(--line);border-radius:5px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--ink-3);cursor:pointer;transition:all .15s;display:none;}
+.logout-btn:hover{background:var(--red-t);border-color:var(--red-l);color:var(--red);}
+
+#login-wrap{padding-top:60px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;}
+#login-wrap h2{font-size:18px;font-weight:700;letter-spacing:-.3px;}
+#login-wrap p{font-size:13px;color:var(--ink-3);}
+.login-card{width:100%;background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:20px;}
+label{display:block;font-size:12px;font-weight:500;color:var(--ink-3);margin-bottom:5px;}
+input{width:100%;height:40px;border:1px solid var(--line);border-radius:var(--r-sm);padding:0 12px;font-family:'Inter',sans-serif;font-size:14px;color:var(--ink);background:var(--white);outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;}
+input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
+.btn-primary{width:100%;height:42px;background:var(--blue);border:none;border-radius:var(--r-sm);color:#fff;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;}
+.btn-primary:hover{background:#1D4ED8;}
+.btn-primary:disabled{background:#93C5FD;cursor:not-allowed;}
+.err-login{font-size:12px;color:var(--red);text-align:center;display:none;margin-bottom:8px;}
+
+#app-wrap{display:none;}
+#app-wrap.show{display:block;}
+
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;overflow:hidden;}
+.cs{padding:16px 18px;border-bottom:1px solid #F3F4F6;}
+.cs:last-child{border-bottom:none;}
+
+/* Section header with toggle */
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;}
+.st{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-4);}
+.toggle-btn{height:24px;padding:0 10px;background:transparent;border:1px solid var(--line);border-radius:4px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:var(--ink-4);cursor:pointer;transition:all .15s;}
+.toggle-btn:hover{background:var(--bg);color:var(--ink-3);}
+.collapsible{overflow:hidden;transition:max-height .25s ease,opacity .25s ease;max-height:300px;opacity:1;margin-top:12px;}
+.collapsible.hidden{max-height:0;opacity:0;margin-top:0;}
+
+.gen-btn{width:100%;height:48px;background:var(--ink);border:none;border-radius:var(--r-sm);color:#fff;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s;}
+.gen-btn:hover{background:#1f2937;}
+
+.link-result{background:var(--green-t);border:1px solid var(--green-l);border-radius:var(--r-sm);padding:14px;margin-top:12px;display:none;}
+.link-result.show{display:block;}
+.link-result.expired{background:var(--bg);border-color:var(--line);}
+.lr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.lr-status{font-size:12px;font-weight:600;color:var(--green);}
+.link-result.expired .lr-status{color:var(--ink-4);}
+.lr-timer{font-size:13px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;}
+.lr-timer.urgent{color:var(--red);}
+.link-result.expired .lr-timer{display:none;}
+.qr-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:4px 0 8px;}
+.qr-inner{background:#fff;padding:12px;border:1px solid var(--line);border-radius:var(--r-sm);display:inline-block;}
+.qr-hint{font-size:11px;color:var(--ink-4);text-align:center;}
+.copy-link{font-size:11px;color:var(--blue);cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.stat-box{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 16px;}
+.stat-val{font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.5px;line-height:1;}
+.stat-lbl{font-size:11px;color:var(--ink-4);margin-top:4px;}
+
+/* To-collect list */
+.collect-item{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #F3F4F6;}
+.collect-item:last-child{border-bottom:none;}
+.ci-left .ci-name{font-size:13px;font-weight:600;}
+.ci-left .ci-detail{font-size:11px;color:var(--ink-4);margin-top:2px;display:flex;align-items:center;gap:6px;}
+.ci-method{font-size:10px;font-weight:600;border-radius:4px;padding:1px 6px;}
+.ci-method.tpe{color:var(--blue);background:var(--blue-t);border:1px solid var(--blue-l);}
+.ci-method.cash{color:var(--amber);background:var(--amber-t);border:1px solid var(--amber-l);}
+.ci-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.ci-amount{font-size:15px;font-weight:700;color:var(--ink-2);}
+.confirm-btn{height:30px;padding:0 12px;background:var(--green-t);border:1px solid var(--green-l);border-radius:5px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--green);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.confirm-btn:hover{background:var(--green);color:#fff;}
+.confirm-btn.done{background:var(--green);color:#fff;cursor:default;opacity:.7;}
+.empty-state{font-size:13px;color:var(--ink-4);text-align:center;padding:16px 0;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ink);color:#fff;font-size:12px;font-weight:500;padding:8px 16px;border-radius:999px;transition:transform .25s,opacity .25s;opacity:0;pointer-events:none;z-index:100;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="wm">
+      <div class="wm-icon">
+        <svg width="16" height="18" viewBox="0 0 18 20" fill="none">
+          <path d="M10 1L1 11h8l-1 8 9-10h-8l1-8z" fill="#fff" stroke="#fff" stroke-width=".4" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="wm-name">Flash<em>Sport</em></div>
+    </div>
+    <div class="header-right">
+      <div class="badge-vendor" id="vendor-badge"></div>
+      <button class="logout-btn" id="logout-btn" onclick="logout()">Déconnexion</button>
+    </div>
+  </header>
+
+  <!-- LOGIN -->
+  <div id="login-wrap">
+    <div class="wm-icon" style="width:48px;height:48px;border-radius:12px;">
+      <svg width="22" height="24" viewBox="0 0 18 20" fill="none">
+        <path d="M10 1L1 11h8l-1 8 9-10h-8l1-8z" fill="#fff" stroke="#fff" stroke-width=".4" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2>Accès vendeur</h2>
+    <p>Entrez votre identifiant et clé d'accès<br>pour accéder à l'interface stand.</p>
+    <div class="login-card">
+      <div style="margin-bottom:12px;">
+        <label for="vendor-id">Identifiant vendeur</label>
+        <input id="vendor-id" type="text" placeholder="ex: vendeur-01" autocomplete="off">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label for="admin-key">Clé d'accès</label>
+        <input id="admin-key" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+      </div>
+      <div class="err-login" id="err-login">Clé incorrecte. Réessayez.</div>
+      <button class="btn-primary" onclick="login()">Accéder au stand</button>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app-wrap">
+
+    <!-- Générer un lien -->
+    <div class="card">
+      <div class="cs">
+        <div class="st" style="margin-bottom:12px;">Générer un lien client</div>
+        <button class="gen-btn" id="gen-btn" onclick="generateLink()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 2v12M2 8h12" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          Nouveau lien (15 min)
+        </button>
+        <div class="link-result" id="link-result">
+          <div class="lr-top">
+            <span class="lr-status" id="lr-status">Lien actif</span>
+            <span class="lr-timer" id="lr-timer">15:00</span>
+          </div>
+          <div class="qr-wrap">
+            <div class="qr-inner"><div id="qr-code"></div></div>
+            <div class="qr-hint">Le client scanne ce QR code avec son téléphone</div>
+            <span class="copy-link" onclick="copyLink()">Ou copier le lien</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card">
+      <div class="cs">
+        <div class="section-hd">
+          <div class="st">Aujourd'hui</div>
+          <button class="toggle-btn" id="stats-toggle" onclick="toggleStats()">Masquer</button>
+        </div>
+        <div class="collapsible" id="stats-body">
+          <div class="stats-row">
+            <div class="stat-box">
+              <div class="stat-val" id="stat-orders">0</div>
+              <div class="stat-lbl">Commandes</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-val" id="stat-ca">0 €</div>
+              <div class="stat-lbl">CA encaissé</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- À encaisser -->
+    <div class="card">
+      <div class="cs">
+        <div class="section-hd">
+          <div class="st">À encaisser au stand</div>
+          <button class="toggle-btn" id="collect-toggle" onclick="toggleCollect()">Masquer</button>
+        </div>
+        <div class="collapsible" id="collect-body">
+          <div id="cash-list" style="margin-top:4px;">
+            <div class="empty-state">Aucune commande en attente</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let ADMIN_KEY = '', VENDOR_ID = '';
+let linkTimer = null, linkSecs = 0, currentLink = '';
+let pendingOrders = [];
+let stats = { orders:0, ca:0 };
+let statsVisible = true, collectVisible = true;
+
+async function login() {
+  const key = document.getElementById('admin-key').value.trim();
+  const vid = document.getElementById('vendor-id').value.trim() || 'stand';
+  if (!key) return;
+
+  const res = await fetch('/api/vendor/generate-link', {
+    method:  'POST',
+    headers: { 'Content-Type':'application/json', 'x-admin-key': key },
+    body:    JSON.stringify({ vendorId: vid }),
+  });
+
+  if (res.status === 401) {
+    document.getElementById('err-login').style.display = 'block';
+    return;
+  }
+
+  ADMIN_KEY = key;
+  VENDOR_ID = vid;
+  const data = await res.json();
+
+  document.getElementById('login-wrap').style.display = 'none';
+  document.getElementById('app-wrap').classList.add('show');
+  document.getElementById('vendor-badge').style.display = 'block';
+  document.getElementById('vendor-badge').textContent = vid;
+  document.getElementById('logout-btn').style.display = 'block';
+  showLink(data.link, data.expiresInSeconds);
+}
+
+function logout() {
+  ADMIN_KEY = ''; VENDOR_ID = '';
+  document.getElementById('app-wrap').classList.remove('show');
+  document.getElementById('login-wrap').style.display = 'flex';
+  document.getElementById('vendor-badge').style.display = 'none';
+  document.getElementById('logout-btn').style.display = 'none';
+  document.getElementById('admin-key').value = '';
+  document.getElementById('vendor-id').value = '';
+  document.getElementById('err-login').style.display = 'none';
+  if (linkTimer) clearInterval(linkTimer);
+  pendingOrders = []; stats = { orders:0, ca:0 };
+  renderCollectList(); updateStats();
+}
+
+async function generateLink() {
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true; btn.textContent = 'Génération…';
+  const res  = await fetch('/api/vendor/generate-link', {
+    method:  'POST',
+    headers: { 'Content-Type':'application/json', 'x-admin-key': ADMIN_KEY },
+    body:    JSON.stringify({ vendorId: VENDOR_ID }),
+  });
+  const data = await res.json();
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg> Nouveau lien (15 min)`;
+  showLink(data.link, data.expiresInSeconds);
+}
+
+function showLink(link, secs) {
+  currentLink = link;
+  const result = document.getElementById('link-result');
+  result.classList.remove('expired');
+  result.classList.add('show');
+  document.getElementById('lr-status').textContent = 'Lien actif';
+  document.getElementById('lr-timer').classList.remove('urgent');
+
+  const qrBox = document.getElementById('qr-code');
+  qrBox.innerHTML = '';
+  new QRCode(qrBox, {
+    text: link, width:180, height:180,
+    colorDark:'#0F1117', colorLight:'#ffffff',
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+
+  if (linkTimer) clearInterval(linkTimer);
+  linkSecs = secs;
+  function tick() {
+    if (linkSecs <= 0) {
+      document.getElementById('lr-timer').textContent = 'Expiré';
+      document.getElementById('lr-status').textContent = 'Lien expiré';
+      result.classList.add('expired');
+      clearInterval(linkTimer); return;
+    }
+    linkSecs--;
+    const m = String(Math.floor(linkSecs/60)).padStart(2,'0');
+    const s = String(linkSecs%60).padStart(2,'0');
+    document.getElementById('lr-timer').textContent = `${m}:${s}`;
+    if (linkSecs < 60) document.getElementById('lr-timer').classList.add('urgent');
+  }
+  tick(); linkTimer = setInterval(tick, 1000);
+}
+
+function copyLink() {
+  if (!currentLink) return;
+  navigator.clipboard.writeText(currentLink).then(() => showToast('Lien copié'));
+}
+
+// ── Toggle stats ──
+function toggleStats() {
+  statsVisible = !statsVisible;
+  document.getElementById('stats-body').classList.toggle('hidden', !statsVisible);
+  document.getElementById('stats-toggle').textContent = statsVisible ? 'Masquer' : 'Afficher';
+}
+
+// ── Toggle collect ──
+function toggleCollect() {
+  collectVisible = !collectVisible;
+  document.getElementById('collect-body').classList.toggle('hidden', !collectVisible);
+  document.getElementById('collect-toggle').textContent = collectVisible ? 'Masquer' : 'Afficher';
+}
+
+// ── Stats ──
+function updateStats() {
+  document.getElementById('stat-orders').textContent = stats.orders;
+  document.getElementById('stat-ca').textContent     = `${stats.ca} €`;
+}
+
+// ── Confirm encaissement ──
+async function confirmCash(btn, orderNumber, amount) {
+  btn.classList.add('done');
+  btn.textContent = 'Encaissé';
+  btn.disabled = true;
+
+  await fetch('/api/vendor/confirm-cash', {
+    method:  'POST',
+    headers: { 'Content-Type':'application/json', 'x-admin-key': ADMIN_KEY },
+    body:    JSON.stringify({ orderNumber }),
+  });
+
+  stats.orders++;
+  stats.ca += parseFloat(amount);
+  updateStats();
+  showToast('Paiement confirmé');
+}
+
+// ── Render list ──
+function renderCollectList() {
+  const el = document.getElementById('cash-list');
+  const pending = pendingOrders.filter(o => !o.done);
+  if (!pending.length) {
+    el.innerHTML = '<div class="empty-state">Aucune commande en attente</div>';
+    return;
+  }
+  el.innerHTML = pending.map(o => `
+    <div class="collect-item">
+      <div class="ci-left">
+        <div class="ci-name">${o.customerName} &mdash; ${o.equipageNumber}</div>
+        <div class="ci-detail">
+          Pack ${o.packId}
+          <span class="ci-method ${o.paymentMethod}">${o.paymentMethod === 'tpe' ? 'CB TPE' : 'Espèces'}</span>
+        </div>
+      </div>
+      <div class="ci-right">
+        <div class="ci-amount">${o.amount} €</div>
+        <button class="confirm-btn" onclick="confirmCash(this,'${o.orderNumber}',${o.amount})">Encaissé</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── BroadcastChannel — reçoit les commandes de la page client ──
+const bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('flashsport') : null;
+if (bc) {
+  bc.onmessage = e => {
+    if (e.data.type === 'stand_order') {
+      pendingOrders.push(e.data.order);
+      renderCollectList();
+      showToast(`Nouvelle commande — ${e.data.order.equipageNumber}`);
+    }
+    if (e.data.type === 'online_order') {
+      stats.orders++;
+      stats.ca += parseFloat(e.data.order.amount);
+      updateStats();
+      showToast(`Paiement en ligne — ${e.data.order.equipageNumber}`);
+    }
+  };
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
