@@ -20,7 +20,6 @@
 html{-webkit-font-smoothing:antialiased;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;min-height:100vh;}
 .page{max-width:400px;margin:0 auto;padding:0 16px 60px;}
-
 header{padding:24px 0 20px;display:flex;align-items:center;justify-content:space-between;}
 .wm{display:flex;align-items:center;gap:8px;}
 .wm-icon{width:30px;height:30px;border-radius:7px;background:var(--ink);display:flex;align-items:center;justify-content:center;}
@@ -30,7 +29,6 @@ header{padding:24px 0 20px;display:flex;align-items:center;justify-content:space
 .badge-vendor{font-size:11px;font-weight:600;background:var(--ink);color:#fff;border-radius:4px;padding:3px 8px;display:none;}
 .logout-btn{height:30px;padding:0 12px;background:var(--white);border:1px solid var(--line);border-radius:5px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--ink-3);cursor:pointer;transition:all .15s;display:none;}
 .logout-btn:hover{background:var(--red-t);border-color:var(--red-l);color:var(--red);}
-
 #login-wrap{padding-top:60px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;}
 #login-wrap h2{font-size:18px;font-weight:700;letter-spacing:-.3px;}
 #login-wrap p{font-size:13px;color:var(--ink-3);}
@@ -42,25 +40,20 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
 .btn-primary:hover{background:#1D4ED8;}
 .btn-primary:disabled{background:#93C5FD;cursor:not-allowed;}
 .err-login{font-size:12px;color:var(--red);text-align:center;display:none;margin-bottom:8px;}
-
 #app-wrap{display:none;}
 #app-wrap.show{display:block;}
-
 .card{background:var(--white);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;overflow:hidden;}
 .cs{padding:16px 18px;border-bottom:1px solid #F3F4F6;}
 .cs:last-child{border-bottom:none;}
-
-/* Section header with toggle */
-.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;}
+.section-hd{display:flex;align-items:center;justify-content:space-between;}
 .st{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-4);}
 .toggle-btn{height:24px;padding:0 10px;background:transparent;border:1px solid var(--line);border-radius:4px;font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:var(--ink-4);cursor:pointer;transition:all .15s;}
 .toggle-btn:hover{background:var(--bg);color:var(--ink-3);}
-.collapsible{overflow:hidden;transition:max-height .25s ease,opacity .25s ease;max-height:300px;opacity:1;margin-top:12px;}
+.collapsible{overflow:hidden;transition:max-height .3s ease,opacity .3s ease;max-height:500px;opacity:1;margin-top:12px;}
 .collapsible.hidden{max-height:0;opacity:0;margin-top:0;}
-
 .gen-btn{width:100%;height:48px;background:var(--ink);border:none;border-radius:var(--r-sm);color:#fff;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .15s;}
 .gen-btn:hover{background:#1f2937;}
-
+.gen-btn:disabled{background:#6B7280;cursor:not-allowed;}
 .link-result{background:var(--green-t);border:1px solid var(--green-l);border-radius:var(--r-sm);padding:14px;margin-top:12px;display:none;}
 .link-result.show{display:block;}
 .link-result.expired{background:var(--bg);border-color:var(--line);}
@@ -74,17 +67,14 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
 .qr-inner{background:#fff;padding:12px;border:1px solid var(--line);border-radius:var(--r-sm);display:inline-block;}
 .qr-hint{font-size:11px;color:var(--ink-4);text-align:center;}
 .copy-link{font-size:11px;color:var(--blue);cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
-
 .stats-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .stat-box{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 16px;}
 .stat-val{font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.5px;line-height:1;}
 .stat-lbl{font-size:11px;color:var(--ink-4);margin-top:4px;}
-
-/* To-collect list */
 .collect-item{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #F3F4F6;}
 .collect-item:last-child{border-bottom:none;}
 .ci-left .ci-name{font-size:13px;font-weight:600;}
-.ci-left .ci-detail{font-size:11px;color:var(--ink-4);margin-top:2px;display:flex;align-items:center;gap:6px;}
+.ci-left .ci-detail{font-size:11px;color:var(--ink-4);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .ci-method{font-size:10px;font-weight:600;border-radius:4px;padding:1px 6px;}
 .ci-method.tpe{color:var(--blue);background:var(--blue-t);border:1px solid var(--blue-l);}
 .ci-method.cash{color:var(--amber);background:var(--amber-t);border:1px solid var(--amber-l);}
@@ -93,8 +83,10 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
 .confirm-btn{height:30px;padding:0 12px;background:var(--green-t);border:1px solid var(--green-l);border-radius:5px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;color:var(--green);cursor:pointer;transition:all .15s;white-space:nowrap;}
 .confirm-btn:hover{background:var(--green);color:#fff;}
 .confirm-btn.done{background:var(--green);color:#fff;cursor:default;opacity:.7;}
+.polling-indicator{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-4);margin-top:10px;}
+.poll-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .empty-state{font-size:13px;color:var(--ink-4);text-align:center;padding:16px 0;}
-
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ink);color:#fff;font-size:12px;font-weight:500;padding:8px 16px;border-radius:999px;transition:transform .25s,opacity .25s;opacity:0;pointer-events:none;z-index:100;}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
 </style>
@@ -142,7 +134,6 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
   <!-- APP -->
   <div id="app-wrap">
 
-    <!-- Générer un lien -->
     <div class="card">
       <div class="cs">
         <div class="st" style="margin-bottom:12px;">Générer un lien client</div>
@@ -166,7 +157,6 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
       </div>
     </div>
 
-    <!-- Stats -->
     <div class="card">
       <div class="cs">
         <div class="section-hd">
@@ -188,7 +178,6 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
       </div>
     </div>
 
-    <!-- À encaisser -->
     <div class="card">
       <div class="cs">
         <div class="section-hd">
@@ -198,6 +187,10 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
         <div class="collapsible" id="collect-body">
           <div id="cash-list" style="margin-top:4px;">
             <div class="empty-state">Aucune commande en attente</div>
+          </div>
+          <div class="polling-indicator">
+            <div class="poll-dot"></div>
+            Mise à jour automatique toutes les 5 secondes
           </div>
         </div>
       </div>
@@ -211,8 +204,9 @@ input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08);}
 <script>
 let ADMIN_KEY = '', VENDOR_ID = '';
 let linkTimer = null, linkSecs = 0, currentLink = '';
-let pendingOrders = [];
-let stats = { orders:0, ca:0 };
+let pollInterval = null;
+let knownOrders = new Set();
+let confirmedOrders = new Set();
 let statsVisible = true, collectVisible = true;
 
 async function login() {
@@ -231,30 +225,31 @@ async function login() {
     return;
   }
 
-  ADMIN_KEY = key;
-  VENDOR_ID = vid;
+  ADMIN_KEY = key; VENDOR_ID = vid;
   const data = await res.json();
 
-  document.getElementById('login-wrap').style.display = 'none';
+  document.getElementById('login-wrap').style.display   = 'none';
   document.getElementById('app-wrap').classList.add('show');
-  document.getElementById('vendor-badge').style.display = 'block';
-  document.getElementById('vendor-badge').textContent = vid;
-  document.getElementById('logout-btn').style.display = 'block';
+  document.getElementById('vendor-badge').style.display  = 'block';
+  document.getElementById('vendor-badge').textContent    = vid;
+  document.getElementById('logout-btn').style.display    = 'block';
+
   showLink(data.link, data.expiresInSeconds);
+  startPolling();
 }
 
 function logout() {
   ADMIN_KEY = ''; VENDOR_ID = '';
+  if (linkTimer)    clearInterval(linkTimer);
+  if (pollInterval) clearInterval(pollInterval);
+  knownOrders.clear(); confirmedOrders.clear();
   document.getElementById('app-wrap').classList.remove('show');
-  document.getElementById('login-wrap').style.display = 'flex';
-  document.getElementById('vendor-badge').style.display = 'none';
-  document.getElementById('logout-btn').style.display = 'none';
+  document.getElementById('login-wrap').style.display   = 'flex';
+  document.getElementById('vendor-badge').style.display  = 'none';
+  document.getElementById('logout-btn').style.display    = 'none';
   document.getElementById('admin-key').value = '';
   document.getElementById('vendor-id').value = '';
   document.getElementById('err-login').style.display = 'none';
-  if (linkTimer) clearInterval(linkTimer);
-  pendingOrders = []; stats = { orders:0, ca:0 };
-  renderCollectList(); updateStats();
 }
 
 async function generateLink() {
@@ -274,27 +269,21 @@ async function generateLink() {
 function showLink(link, secs) {
   currentLink = link;
   const result = document.getElementById('link-result');
-  result.classList.remove('expired');
-  result.classList.add('show');
+  result.classList.remove('expired'); result.classList.add('show');
   document.getElementById('lr-status').textContent = 'Lien actif';
   document.getElementById('lr-timer').classList.remove('urgent');
 
   const qrBox = document.getElementById('qr-code');
   qrBox.innerHTML = '';
-  new QRCode(qrBox, {
-    text: link, width:180, height:180,
-    colorDark:'#0F1117', colorLight:'#ffffff',
-    correctLevel: QRCode.CorrectLevel.M,
-  });
+  new QRCode(qrBox, { text:link, width:180, height:180, colorDark:'#0F1117', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M });
 
   if (linkTimer) clearInterval(linkTimer);
   linkSecs = secs;
   function tick() {
     if (linkSecs <= 0) {
-      document.getElementById('lr-timer').textContent = 'Expiré';
+      document.getElementById('lr-timer').textContent  = 'Expiré';
       document.getElementById('lr-status').textContent = 'Lien expiré';
-      result.classList.add('expired');
-      clearInterval(linkTimer); return;
+      result.classList.add('expired'); clearInterval(linkTimer); return;
     }
     linkSecs--;
     const m = String(Math.floor(linkSecs/60)).padStart(2,'0');
@@ -310,91 +299,97 @@ function copyLink() {
   navigator.clipboard.writeText(currentLink).then(() => showToast('Lien copié'));
 }
 
-// ── Toggle stats ──
+// ── Polling ──
+function startPolling() {
+  fetchOrders();
+  pollInterval = setInterval(fetchOrders, 5000);
+}
+
+async function fetchOrders() {
+  try {
+    const res  = await fetch('/api/vendor/orders', { headers:{ 'x-admin-key': ADMIN_KEY } });
+    const data = await res.json();
+    if (!data.orders) return;
+
+    // Notif nouvelles commandes
+    let isFirst = knownOrders.size === 0;
+    data.orders.forEach(o => {
+      if (!knownOrders.has(o.orderNumber)) {
+        knownOrders.add(o.orderNumber);
+        if (!isFirst) showToast(`🔔 Nouvelle commande — ${o.equipageNumber}`);
+      }
+    });
+
+    renderCollectList(data.orders);
+    updateStats(data.orders);
+  } catch(e) { console.error('[poll]', e); }
+}
+
+function renderCollectList(orders) {
+  const el      = document.getElementById('cash-list');
+  const pending = orders.filter(o =>
+    (o.paymentMethod === 'cash' || o.paymentMethod === 'tpe') &&
+    o.paymentStatus === 'pending' &&
+    !confirmedOrders.has(o.orderNumber)
+  );
+
+  if (!pending.length) {
+    el.innerHTML = '<div class="empty-state">Aucune commande en attente</div>';
+    return;
+  }
+
+  el.innerHTML = pending.map(o => {
+    const albums = o.extraAlbums > 0 ? ` · +${o.extraAlbums} album${o.extraAlbums > 1 ? 's' : ''}` : '';
+    return `
+    <div class="collect-item">
+      <div class="ci-left">
+        <div class="ci-name">${o.customerName} — ${o.equipageNumber}</div>
+        <div class="ci-detail">
+          ${o.packLabel || o.packId}${albums}
+          <span class="ci-method ${o.paymentMethod}">${o.paymentMethod === 'tpe' ? 'CB TPE' : 'Espèces'}</span>
+        </div>
+      </div>
+      <div class="ci-right">
+        <div class="ci-amount">${o.amount} €</div>
+        <button class="confirm-btn" onclick="confirmCash(this,'${o.orderNumber}')">Encaissé</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateStats(orders) {
+  const totalCa = orders
+    .filter(o => o.paymentStatus === 'paid' || confirmedOrders.has(o.orderNumber))
+    .reduce((sum, o) => sum + parseFloat(o.amount), 0);
+  document.getElementById('stat-orders').textContent = orders.length;
+  document.getElementById('stat-ca').textContent     = `${totalCa.toFixed(0)} €`;
+}
+
+async function confirmCash(btn, orderNumber) {
+  btn.classList.add('done'); btn.textContent = 'Encaissé ✓'; btn.disabled = true;
+  confirmedOrders.add(orderNumber);
+  await fetch('/api/vendor/confirm-cash', {
+    method:'POST', headers:{'Content-Type':'application/json','x-admin-key':ADMIN_KEY},
+    body: JSON.stringify({ orderNumber }),
+  });
+  showToast('Paiement confirmé ✓');
+  fetchOrders();
+}
+
 function toggleStats() {
   statsVisible = !statsVisible;
   document.getElementById('stats-body').classList.toggle('hidden', !statsVisible);
   document.getElementById('stats-toggle').textContent = statsVisible ? 'Masquer' : 'Afficher';
 }
-
-// ── Toggle collect ──
 function toggleCollect() {
   collectVisible = !collectVisible;
   document.getElementById('collect-body').classList.toggle('hidden', !collectVisible);
   document.getElementById('collect-toggle').textContent = collectVisible ? 'Masquer' : 'Afficher';
 }
 
-// ── Stats ──
-function updateStats() {
-  document.getElementById('stat-orders').textContent = stats.orders;
-  document.getElementById('stat-ca').textContent     = `${stats.ca} €`;
-}
-
-// ── Confirm encaissement ──
-async function confirmCash(btn, orderNumber, amount) {
-  btn.classList.add('done');
-  btn.textContent = 'Encaissé';
-  btn.disabled = true;
-
-  await fetch('/api/vendor/confirm-cash', {
-    method:  'POST',
-    headers: { 'Content-Type':'application/json', 'x-admin-key': ADMIN_KEY },
-    body:    JSON.stringify({ orderNumber }),
-  });
-
-  stats.orders++;
-  stats.ca += parseFloat(amount);
-  updateStats();
-  showToast('Paiement confirmé');
-}
-
-// ── Render list ──
-function renderCollectList() {
-  const el = document.getElementById('cash-list');
-  const pending = pendingOrders.filter(o => !o.done);
-  if (!pending.length) {
-    el.innerHTML = '<div class="empty-state">Aucune commande en attente</div>';
-    return;
-  }
-  el.innerHTML = pending.map(o => `
-    <div class="collect-item">
-      <div class="ci-left">
-        <div class="ci-name">${o.customerName} &mdash; ${o.equipageNumber}</div>
-        <div class="ci-detail">
-          Pack ${o.packId}
-          <span class="ci-method ${o.paymentMethod}">${o.paymentMethod === 'tpe' ? 'CB TPE' : 'Espèces'}</span>
-        </div>
-      </div>
-      <div class="ci-right">
-        <div class="ci-amount">${o.amount} €</div>
-        <button class="confirm-btn" onclick="confirmCash(this,'${o.orderNumber}',${o.amount})">Encaissé</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── BroadcastChannel — reçoit les commandes de la page client ──
-const bc = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('flashsport') : null;
-if (bc) {
-  bc.onmessage = e => {
-    if (e.data.type === 'stand_order') {
-      pendingOrders.push(e.data.order);
-      renderCollectList();
-      showToast(`Nouvelle commande — ${e.data.order.equipageNumber}`);
-    }
-    if (e.data.type === 'online_order') {
-      stats.orders++;
-      stats.ca += parseFloat(e.data.order.amount);
-      updateStats();
-      showToast(`Paiement en ligne — ${e.data.order.equipageNumber}`);
-    }
-  };
-}
-
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 </script>
