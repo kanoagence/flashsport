@@ -27,12 +27,13 @@ const ALBUM_PRICE = 5000;
 const pendingOrders = [];
 
 // ── Middleware ──
+app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
+app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 200, validate: { xForwardedForHeader: false } }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Admin auth ──
