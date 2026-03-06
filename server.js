@@ -6,7 +6,6 @@ const cors      = require('cors');
 const helmet    = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path      = require('path');
-const stripe    = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
 
 const tokens = require('./lib/tokens');
 const pdf    = require('./lib/pdf');
@@ -30,7 +29,6 @@ const pendingOrders = [];
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
-app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 200, validate: { xForwardedForHeader: false } }));
@@ -60,33 +58,14 @@ app.get('/api/order/validate', (req, res) => {
   res.json(tokens.verify(t));
 });
 
-// ── ROUTE 3 — Créer un Payment Intent Stripe ──
-app.post('/api/order/payment-intent', async (req, res) => {
-  const { token, packId, extraAlbums = 0, customerEmail, customerName, equipageNumber } = req.body;
-  const v = tokens.verify(token);
-  if (!v.ok) return res.status(400).json({ error: v.reason });
-  const pack = PACKS[packId];
-  if (!pack) return res.status(400).json({ error: 'Pack invalide' });
-
-  const totalAmount = pack.amount + (parseInt(extraAlbums) || 0) * ALBUM_PRICE;
-
-  try {
-    const intent = await stripe.paymentIntents.create({
-      amount:        totalAmount,
-      currency:      'eur',
-      metadata:      { token, packId, extraAlbums: String(extraAlbums), customerEmail, customerName, equipageNumber, vendorId: v.payload.vendorId },
-      receipt_email: customerEmail,
-    });
-    res.json({ clientSecret: intent.client_secret });
-  } catch (err) {
-    console.error('[stripe]', err.message);
-    res.status(500).json({ error: 'Erreur Stripe' });
-  }
-});
-
-// ── ROUTE 4 — Commande stand (TPE ou espèces) ──
+// ── ROUTE 3 — Commande stand (TPE ou espèces) ──
 app.post('/api/order/cash', async (req, res) => {
-  const { token, packId, extraAlbums = 0, customerName, customerEmail, customerPhone, equipageNumber, paymentMethod = 'cash' } = req.body;
+  const {
+    token, packId, extraAlbums = 0,
+    customerName, customerEmail, customerPhone, equipageNumber,
+    paymentMethod = 'cash', deliveryAddress = null,
+  } = req.body;
+
   const v = tokens.verify(token);
   if (!v.ok) return res.status(400).json({ error: v.reason });
   const pack = PACKS[packId];
@@ -97,23 +76,24 @@ app.post('/api/order/cash', async (req, res) => {
   const totalAmount = pack.amount + (parseInt(extraAlbums) || 0) * ALBUM_PRICE;
 
   const order = {
-    orderNumber:   `FS-${Date.now()}-${equipageNumber.replace(/\W/g,'')}`,
-    createdAt:     new Date().toISOString(),
+    orderNumber:     `FS-${Date.now()}-${equipageNumber.replace(/\W/g,'')}`,
+    createdAt:       new Date().toISOString(),
     customerName,
     customerEmail,
     customerPhone,
     equipageNumber,
     packId,
-    packLabel:     pack.label,
-    extraAlbums:   parseInt(extraAlbums) || 0,
-    amount:        (totalAmount / 100).toFixed(2),
+    packLabel:       pack.label,
+    extraAlbums:     parseInt(extraAlbums) || 0,
+    amount:          (totalAmount / 100).toFixed(2),
     paymentMethod,
-    paymentStatus: 'pending',
-    vendorId:      v.payload.vendorId,
+    paymentStatus:   'pending',
+    vendorId:        v.payload.vendorId,
+    deliveryAddress,
   };
 
   pendingOrders.push(order);
-  console.log(`[order] Nouvelle commande ${order.orderNumber} — ${order.packLabel} — ${order.amount}€ — ${paymentMethod}`);
+  console.log(`[order] ${order.orderNumber} — ${order.packLabel} — ${order.amount}€ — ${paymentMethod}`);
 
   Promise.all([
     sheets.appendOrder(order).catch(e => console.error('[sheets]', e.message)),
@@ -128,64 +108,12 @@ app.post('/api/order/cash', async (req, res) => {
   res.json({ ok: true, order });
 });
 
-// ── ROUTE 5 — Webhook Stripe ──
-app.post('/api/stripe/webhook', async (req, res) => {
-  const sig    = req.headers['stripe-signature'];
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  let event;
-  try {
-    event = secret && secret !== 'placeholder'
-      ? stripe.webhooks.constructEvent(req.body, sig, secret)
-      : JSON.parse(req.body);
-  } catch (err) {
-    return res.status(400).send(`Webhook error: ${err.message}`);
-  }
-
-  if (event.type === 'payment_intent.succeeded') {
-    const intent = event.data.object;
-    const m      = intent.metadata;
-    if (m.token) tokens.consume(m.token);
-
-    const pack  = PACKS[m.packId] || {};
-    const order = {
-      orderNumber:     `FS-${Date.now()}-${(m.equipageNumber||'').replace(/\W/g,'')}`,
-      createdAt:       new Date().toISOString(),
-      customerName:    m.customerName,
-      customerEmail:   m.customerEmail,
-      customerPhone:   m.customerPhone || '',
-      equipageNumber:  m.equipageNumber,
-      packId:          m.packId,
-      packLabel:       pack.label,
-      extraAlbums:     parseInt(m.extraAlbums) || 0,
-      amount:          ((intent.amount_received || intent.amount) / 100).toFixed(2),
-      paymentMethod:   'card',
-      paymentStatus:   'paid',
-      vendorId:        m.vendorId,
-      stripePaymentId: intent.id,
-    };
-
-    pendingOrders.push(order);
-
-    Promise.all([
-      sheets.appendOrder(order).catch(e => console.error('[sheets]', e.message)),
-      (async () => {
-        try {
-          const pdfBuf = await pdf.generate(order);
-          await mailer.sendOrderConfirmation(order, pdfBuf);
-        } catch (e) { console.error('[mail/pdf]', e.message); }
-      })(),
-    ]);
-  }
-
-  res.json({ received: true });
-});
-
-// ── ROUTE 6 — Liste toutes les commandes ──
+// ── ROUTE 4 — Liste toutes les commandes ──
 app.get('/api/vendor/orders', adminAuth, (req, res) => {
   res.json({ orders: pendingOrders });
 });
 
-// ── ROUTE 7 — Confirmer encaissement ──
+// ── ROUTE 5 — Confirmer encaissement ──
 app.post('/api/vendor/confirm-cash', adminAuth, async (req, res) => {
   const { orderNumber } = req.body;
   if (!orderNumber) return res.status(400).json({ error: 'orderNumber requis' });
@@ -198,7 +126,7 @@ app.post('/api/vendor/confirm-cash', adminAuth, async (req, res) => {
   res.json({ ok: true });
 });
 
-// ── ROUTE 8 — Stats ──
+// ── ROUTE 6 — Stats ──
 app.get('/api/vendor/stats', adminAuth, (req, res) => {
   const paid = pendingOrders.filter(o => o.paymentStatus === 'paid');
   const ca   = paid.reduce((sum, o) => sum + parseFloat(o.amount), 0);
