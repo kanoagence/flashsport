@@ -58,6 +58,11 @@ input.err { border-color:var(--red); }
 .field.eq input { font-weight:600; letter-spacing:.5px; }
 .field.eq input:focus { border-color:var(--amber); box-shadow:0 0 0 3px rgba(217,119,6,.08); }
 
+/* ── Adresse ── */
+.address-section { margin-top:14px; padding-top:14px; border-top:1px solid var(--line-2); display:none; }
+.address-section.show { display:block; }
+.address-badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; color:var(--blue); background:var(--blue-tint); border:1px solid var(--blue-line); border-radius:4px; padding:3px 8px; margin-bottom:12px; }
+
 /* ── PACKS ── */
 .pack-list { display:flex; flex-direction:column; gap:8px; }
 .pack { border:1.5px solid var(--line); border-radius:var(--r-sm); cursor:pointer; background:var(--white); transition:border-color .15s,background .15s; user-select:none; overflow:hidden; }
@@ -228,6 +233,32 @@ input.err { border-color:var(--red); }
           <div class="field"><label for="phone">Téléphone</label><input id="phone" type="tel" placeholder="+33 6 …" autocomplete="tel"></div>
           <div class="field eq"><label for="equipage">N° équipage</label><input id="equipage" type="text" placeholder="EQ-0423"></div>
         </div>
+
+        <!-- Adresse livraison — visible uniquement pack2 / pack3 -->
+        <div class="address-section" id="address-section">
+          <div class="address-badge">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1C4.067 1 2.5 2.567 2.5 4.5c0 2.625 3.5 6.5 3.5 6.5s3.5-3.875 3.5-6.5C9.5 2.567 7.933 1 6 1z" stroke="#2563EB" stroke-width="1.1" stroke-linejoin="round"/>
+              <circle cx="6" cy="4.5" r="1" fill="#2563EB"/>
+            </svg>
+            Adresse de livraison album(s)
+          </div>
+          <div class="field">
+            <label for="addr-street">Rue et numéro <span style="color:var(--red)">*</span></label>
+            <input id="addr-street" type="text" placeholder="12 rue des Lilas" autocomplete="street-address">
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="addr-zip">Code postal <span style="color:var(--red)">*</span></label>
+              <input id="addr-zip" type="text" placeholder="75001" maxlength="5" autocomplete="postal-code">
+              <div class="err-msg" id="zip-err">Code postal invalide</div>
+            </div>
+            <div class="field">
+              <label for="addr-city">Ville <span style="color:var(--red)">*</span></label>
+              <input id="addr-city" type="text" placeholder="Paris" autocomplete="address-level2">
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Packs -->
@@ -235,7 +266,7 @@ input.err { border-color:var(--red); }
         <div class="st">Choisir un pack</div>
         <div class="pack-list">
 
-          <div class="pack" data-id="pack1" data-base="229" onclick="selPack(this)">
+          <div class="pack" data-id="pack1" data-base="229" data-album="false" onclick="selPack(this)">
             <div class="pack-main">
               <div class="radio"></div>
               <div class="pack-info">
@@ -251,7 +282,7 @@ input.err { border-color:var(--red); }
             </div>
           </div>
 
-          <div class="pack" data-id="pack2" data-base="329" onclick="selPack(this)">
+          <div class="pack" data-id="pack2" data-base="329" data-album="true" onclick="selPack(this)">
             <div class="pack-main">
               <div class="radio"></div>
               <div class="pack-info">
@@ -267,7 +298,7 @@ input.err { border-color:var(--red); }
             </div>
           </div>
 
-          <div class="pack" data-id="pack3" data-base="359" onclick="selPack(this)">
+          <div class="pack" data-id="pack3" data-base="359" data-album="true" onclick="selPack(this)">
             <div class="pack-main">
               <div class="radio"></div>
               <div class="pack-info">
@@ -285,13 +316,13 @@ input.err { border-color:var(--red); }
 
         </div>
 
-        <!-- Albums supplémentaires -->
+        <!-- Albums supplémentaires — masqué pour pack1 -->
         <div class="album-section" id="album-section">
           <div class="album-header">
             <div class="album-title">Albums papier supplémentaires</div>
             <div class="album-price-tag">50 € / album</div>
           </div>
-          <div class="album-desc">Ajoutez autant d'albums que vous souhaitez à votre commande.</div>
+          <div class="album-desc">Ajoutez autant d'albums que vous souhaitez.</div>
           <div class="counter">
             <button class="counter-btn" id="album-minus" onclick="changeAlbum(-1)" disabled>−</button>
             <span class="counter-val" id="album-val">0</span>
@@ -412,6 +443,7 @@ input.err { border-color:var(--red); }
         <div class="dr"><span class="dk">Équipage</span><span class="dv blue" id="c-eq"></span></div>
         <div class="dr"><span class="dk">Pack</span><span class="dv" id="c-pack"></span></div>
         <div class="dr" id="c-albums-row"><span class="dk">Albums suppl.</span><span class="dv" id="c-albums"></span></div>
+        <div class="dr" id="c-addr-row"><span class="dk">Livraison</span><span class="dv" id="c-addr" style="font-size:12px;text-align:right;max-width:200px;"></span></div>
         <div class="dr"><span class="dk">Total</span><span class="dv" id="c-amount"></span></div>
         <div class="dr"><span class="dk">Paiement</span><span class="dv green">Confirmé en ligne</span></div>
         <div class="dr"><span class="dk">N° commande</span><span class="dv sm" id="c-num"></span></div>
@@ -442,7 +474,7 @@ input.err { border-color:var(--red); }
         </svg>
       </div>
       <div class="c-title">Réservation effectuée</div>
-      <div class="c-sub">Montrez cet écran au stand <strong>Flashsport</strong> pour régler par carte sur le terminal.</div>
+      <div class="c-sub">Montrez cet écran au stand <strong>Flashsport</strong> pour régler par carte.</div>
       <div class="stand-display blue">
         <div class="sd-lbl">Montant à régler par carte</div>
         <div class="sd-num" id="tpe-num">-- €</div>
@@ -452,6 +484,7 @@ input.err { border-color:var(--red); }
         <div class="dr"><span class="dk">Équipage</span><span class="dv blue" id="tpe-eq"></span></div>
         <div class="dr"><span class="dk">Pack</span><span class="dv" id="tpe-pk"></span></div>
         <div class="dr" id="tpe-albums-row"><span class="dk">Albums suppl.</span><span class="dv" id="tpe-albums"></span></div>
+        <div class="dr" id="tpe-addr-row"><span class="dk">Livraison</span><span class="dv" id="tpe-addr" style="font-size:12px;text-align:right;max-width:200px;"></span></div>
         <div class="dr"><span class="dk">Paiement</span><span class="dv blue">CB via TPE au stand</span></div>
       </div>
       <div class="info-box blue">
@@ -459,7 +492,7 @@ input.err { border-color:var(--red); }
           <path d="M8 1L1.07 14h13.86L8 1z" stroke="#2563EB" stroke-width="1.2" stroke-linejoin="round"/>
           <path d="M8 6v3M8 11v.5" stroke="#2563EB" stroke-width="1.4" stroke-linecap="round"/>
         </svg>
-        <p>Rendez-vous au <strong>stand Flashsport · Zone départ</strong> pour régler sur le terminal et récupérer votre autocollant.</p>
+        <p>Rendez-vous au <strong>stand Flashsport · Zone départ</strong> pour régler et récupérer votre autocollant.</p>
       </div>
     </div>
   </div>
@@ -486,6 +519,7 @@ input.err { border-color:var(--red); }
         <div class="dr"><span class="dk">Équipage</span><span class="dv blue" id="cash-eq"></span></div>
         <div class="dr"><span class="dk">Pack</span><span class="dv" id="cash-pk"></span></div>
         <div class="dr" id="cash-albums-row"><span class="dk">Albums suppl.</span><span class="dv" id="cash-albums"></span></div>
+        <div class="dr" id="cash-addr-row"><span class="dk">Livraison</span><span class="dv" id="cash-addr" style="font-size:12px;text-align:right;max-width:200px;"></span></div>
         <div class="dr"><span class="dk">Paiement</span><span class="dv amber">Espèces au stand</span></div>
       </div>
       <div class="info-box amber">
@@ -493,7 +527,7 @@ input.err { border-color:var(--red); }
           <path d="M8 1L1.07 14h13.86L8 1z" stroke="#D97706" stroke-width="1.2" stroke-linejoin="round"/>
           <path d="M8 6v3M8 11v.5" stroke="#D97706" stroke-width="1.4" stroke-linecap="round"/>
         </svg>
-        <p>Rendez-vous au <strong>stand Flashsport · Zone départ</strong> pour régler en espèces et récupérer votre autocollant.</p>
+        <p>Rendez-vous au <strong>stand Flashsport · Zone départ</strong> pour régler et récupérer votre autocollant.</p>
       </div>
     </div>
   </div>
@@ -521,15 +555,13 @@ input.err { border-color:var(--red); }
 
 </div>
 <script>
-// ── Config packs ───────────────────────────────────────────────────────────
 const PACKS = {
-  pack1: { label:'Pack Photo 1', base:229 },
-  pack2: { label:'Pack Photo 2', base:329 },
-  pack3: { label:'Pack Photo 3', base:359 },
+  pack1: { label:'Pack Photo 1', base:229, hasAlbum:false },
+  pack2: { label:'Pack Photo 2', base:329, hasAlbum:true },
+  pack3: { label:'Pack Photo 3', base:359, hasAlbum:true },
 };
 const ALBUM_PRICE = 50;
 
-// ── State ──────────────────────────────────────────────────────────────────
 let TOKEN        = null;
 let selectedPack = null;
 let extraAlbums  = 0;
@@ -538,39 +570,25 @@ let stripeClient = null;
 let cardElement  = null;
 let timerInterval = null;
 
-// ── Init ───────────────────────────────────────────────────────────────────
+// ── Init ──
 (async function init() {
   const params = new URLSearchParams(window.location.search);
   TOKEN = params.get('t');
 
-  // Pas de token → lien expiré
-  if (!TOKEN) {
-    show('view-expired');
-    return;
-  }
+  if (!TOKEN) { show('view-expired'); return; }
 
-  // Valide le token côté serveur
   try {
     const res  = await fetch(`/api/order/validate?t=${TOKEN}`);
     const data = await res.json();
-
-    if (!data.ok) {
-      show('view-expired');
-      return;
-    }
-
-    // Démarre le timer à partir de l'expiration JWT
+    if (!data.ok) { show('view-expired'); return; }
     const secs = data.payload
       ? Math.max(0, Math.floor((data.payload.exp * 1000 - Date.now()) / 1000))
       : 15 * 60;
     startTimer(secs);
-
-  } catch (e) {
-    // Serveur inaccessible en dev → on affiche quand même le form
+  } catch(e) {
     startTimer(15 * 60);
   }
 
-  // Init Stripe si clé dispo
   const STRIPE_KEY = window.STRIPE_PK || '';
   if (STRIPE_KEY && STRIPE_KEY !== 'pk_test_placeholder') {
     try {
@@ -586,49 +604,33 @@ let timerInterval = null;
       cardElement.on('focus',  () => document.getElementById('card-element').classList.add('focused'));
       cardElement.on('blur',   () => document.getElementById('card-element').classList.remove('focused'));
       cardElement.on('change', e => { document.getElementById('card-errors').textContent = e.error?.message || ''; });
-    } catch (_) {}
+    } catch(_) {}
   }
 
-  // Affiche le formulaire — PAS de spinner infini
   show('view-form');
 })();
 
-// ── Timer ──────────────────────────────────────────────────────────────────
 function startTimer(secs) {
   const el = document.getElementById('tc');
   function tick() {
-    if (secs <= 0) {
-      el.textContent = '00:00';
-      el.classList.add('urgent');
-      clearInterval(timerInterval);
-      show('view-expired');
-      return;
-    }
+    if (secs <= 0) { el.textContent='00:00'; el.classList.add('urgent'); clearInterval(timerInterval); show('view-expired'); return; }
     secs--;
     el.textContent = `${String(Math.floor(secs/60)).padStart(2,'0')}:${String(secs%60).padStart(2,'0')}`;
     if (secs < 60) el.classList.add('urgent');
   }
-  tick();
-  timerInterval = setInterval(tick, 1000);
+  tick(); timerInterval = setInterval(tick, 1000);
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 function show(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
   document.getElementById(id).classList.add('on');
   window.scrollTo({ top:0, behavior:'smooth' });
 }
 function getVal(id) { return document.getElementById(id).value.trim(); }
-function setLoading(on) {
-  const b = document.getElementById('submit-btn');
-  b.classList.toggle('loading', on);
-  b.disabled = on;
-}
-function totalPrice() {
-  return selectedPack ? selectedPack.base + extraAlbums * ALBUM_PRICE : 0;
-}
+function totalPrice() { return selectedPack ? selectedPack.base + extraAlbums * ALBUM_PRICE : 0; }
+function setLoading(on) { const b=document.getElementById('submit-btn'); b.classList.toggle('loading',on); b.disabled=on; }
 
-// ── Pack selector ──────────────────────────────────────────────────────────
+// ── Pack selector ──
 function selPack(el) {
   document.querySelectorAll('.pack').forEach(p => p.classList.remove('sel'));
   el.classList.add('sel');
@@ -637,47 +639,56 @@ function selPack(el) {
 
   // Reset albums
   extraAlbums = 0;
-  document.getElementById('album-val').textContent = '0';
-  document.getElementById('album-minus').disabled  = true;
+  document.getElementById('album-val').textContent   = '0';
+  document.getElementById('album-minus').disabled     = true;
   document.getElementById('album-extra').style.display = 'none';
 
-  // Affiche la section albums
-  document.getElementById('album-section').classList.add('show');
+  // Albums suppl — uniquement si pack avec album physique
+  const albumSection = document.getElementById('album-section');
+  if (selectedPack.hasAlbum) {
+    albumSection.classList.add('show');
+  } else {
+    albumSection.classList.remove('show');
+  }
 
-  // Active le bouton
+  // Adresse — uniquement si pack avec album physique
+  const addrSection = document.getElementById('address-section');
+  if (selectedPack.hasAlbum) {
+    addrSection.classList.add('show');
+  } else {
+    addrSection.classList.remove('show');
+    // Vide les champs adresse
+    document.getElementById('addr-street').value = '';
+    document.getElementById('addr-zip').value    = '';
+    document.getElementById('addr-city').value   = '';
+  }
+
   document.getElementById('submit-btn').disabled = false;
-
   updateSummary();
 }
 
-// ── Album counter ──────────────────────────────────────────────────────────
+// ── Album counter ──
 function changeAlbum(delta) {
   extraAlbums = Math.max(0, extraAlbums + delta);
   document.getElementById('album-val').textContent   = extraAlbums;
   document.getElementById('album-minus').disabled     = extraAlbums === 0;
-
   const extraEl    = document.getElementById('album-extra');
   const extraValEl = document.getElementById('album-extra-val');
-  if (extraAlbums > 0) {
-    extraEl.style.display    = 'flex';
-    extraValEl.textContent   = `${extraAlbums * ALBUM_PRICE} €`;
-  } else {
-    extraEl.style.display = 'none';
-  }
+  if (extraAlbums > 0) { extraEl.style.display='flex'; extraValEl.textContent=`${extraAlbums*ALBUM_PRICE} €`; }
+  else { extraEl.style.display='none'; }
   updateSummary();
 }
 
-// ── Summary ────────────────────────────────────────────────────────────────
+// ── Summary ──
 function updateSummary() {
   if (!selectedPack) return;
   const total = totalPrice();
   let html = `<div class="sum-lines">
     <div class="sum-line"><span class="sl-label">${selectedPack.label}</span><span class="sl-val">${selectedPack.base} €</span></div>`;
   if (extraAlbums > 0) {
-    html += `<div class="sum-line"><span class="sl-label">${extraAlbums} album${extraAlbums > 1 ? 's' : ''} suppl.</span><span class="sl-val">${extraAlbums * ALBUM_PRICE} €</span></div>`;
+    html += `<div class="sum-line"><span class="sl-label">${extraAlbums} album${extraAlbums>1?'s':''} suppl.</span><span class="sl-val">${extraAlbums*ALBUM_PRICE} €</span></div>`;
   }
-  html += `</div>
-    <hr class="sum-divider">
+  html += `</div><hr class="sum-divider">
     <div class="sum-total">
       <div class="sum-total-label">Total TTC</div>
       <div class="sum-total-price">${total} <span>€</span></div>
@@ -685,44 +696,57 @@ function updateSummary() {
   document.getElementById('sum-lines').innerHTML = html;
 }
 
-// ── Pay selector ───────────────────────────────────────────────────────────
+// ── Pay selector ──
 function selPay(type) {
   selectedPay = type;
-  ['online','tpe','cash'].forEach(t => {
-    document.getElementById(`pay-${t}`).classList.toggle('sel', t === type);
-  });
-  document.getElementById('stripe-wrap').classList.toggle('show', type === 'online');
+  ['online','tpe','cash'].forEach(t => document.getElementById(`pay-${t}`).classList.toggle('sel', t===type));
+  document.getElementById('stripe-wrap').classList.toggle('show', type==='online');
 }
 
-// ── Validation ─────────────────────────────────────────────────────────────
+// ── Validation ──
 function validate() {
   let ok = true;
   ['fname','lname','email','equipage'].forEach(id => {
     const el = document.getElementById(id);
     el.classList.remove('err');
-    if (!el.value.trim()) { el.classList.add('err'); ok = false; }
+    if (!el.value.trim()) { el.classList.add('err'); ok=false; }
   });
-  const emailEl = document.getElementById('email');
-  const errEl   = document.getElementById('email-err');
+  const emailEl=document.getElementById('email');
+  const errEl=document.getElementById('email-err');
   if (emailEl.value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value.trim())) {
-    emailEl.classList.add('err');
-    errEl.style.display = 'block';
-    ok = false;
-  } else {
-    errEl.style.display = 'none';
+    emailEl.classList.add('err'); errEl.style.display='block'; ok=false;
+  } else { errEl.style.display='none'; }
+
+  // Validation adresse si pack avec album
+  if (selectedPack && selectedPack.hasAlbum) {
+    ['addr-street','addr-city'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove('err');
+      if (!el.value.trim()) { el.classList.add('err'); ok=false; }
+    });
+    const zipEl = document.getElementById('addr-zip');
+    const zipErrEl = document.getElementById('zip-err');
+    zipEl.classList.remove('err');
+    if (!zipEl.value.trim() || !/^\d{4,5}$/.test(zipEl.value.trim())) {
+      zipEl.classList.add('err'); zipErrEl.style.display='block'; ok=false;
+    } else { zipErrEl.style.display='none'; }
   }
-  if (!selectedPack) {
-    document.getElementById('submit-error').textContent = 'Veuillez sélectionner un pack.';
-    ok = false;
-  }
+
+  if (!selectedPack) { document.getElementById('submit-error').textContent='Veuillez sélectionner un pack.'; ok=false; }
   return ok;
 }
 
-// ── Submit ─────────────────────────────────────────────────────────────────
+// ── Submit ──
 async function submitOrder() {
   if (!validate()) return;
   document.getElementById('submit-error').textContent = '';
   setLoading(true);
+
+  const address = selectedPack && selectedPack.hasAlbum ? {
+    street: getVal('addr-street'),
+    zip:    getVal('addr-zip'),
+    city:   getVal('addr-city'),
+  } : null;
 
   const body = {
     token:          TOKEN,
@@ -732,6 +756,7 @@ async function submitOrder() {
     customerEmail:  getVal('email'),
     customerPhone:  getVal('phone'),
     equipageNumber: getVal('equipage'),
+    deliveryAddress: address,
   };
 
   try {
@@ -747,30 +772,19 @@ async function submitOrder() {
 }
 
 async function submitOnline(body) {
-  if (!stripeClient || !cardElement) {
-    throw new Error('Paiement en ligne non disponible. Choisissez un autre mode.');
-  }
-  const piRes  = await fetch('/api/order/payment-intent', {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body),
-  });
+  if (!stripeClient || !cardElement) throw new Error('Paiement en ligne non disponible. Choisissez un autre mode.');
+  const piRes  = await fetch('/api/order/payment-intent', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   const piData = await piRes.json();
   if (!piRes.ok) throw new Error(piData.error || 'Erreur paiement');
-
-  const { error } = await stripeClient.confirmCardPayment(piData.clientSecret, {
-    payment_method: { card: cardElement },
-  });
+  const { error } = await stripeClient.confirmCardPayment(piData.clientSecret, { payment_method:{ card:cardElement } });
   if (error) throw new Error(error.message);
-
   fillConfirm('online', body);
   clearInterval(timerInterval);
   show('view-confirm-online');
 }
 
 async function submitStand(body, method) {
-  const res  = await fetch('/api/order/cash', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ ...body, paymentMethod: method }),
-  });
+  const res  = await fetch('/api/order/cash', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({...body, paymentMethod:method}) });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Erreur serveur');
   fillConfirm(method, body);
@@ -778,44 +792,46 @@ async function submitStand(body, method) {
   show(`view-confirm-${method}`);
 }
 
-// ── Fill confirmation screens ──────────────────────────────────────────────
+function addrText(body) {
+  if (!body.deliveryAddress) return null;
+  return `${body.deliveryAddress.street}, ${body.deliveryAddress.zip} ${body.deliveryAddress.city}`;
+}
+
 function fillConfirm(method, body) {
   const total      = totalPrice();
-  const albumsText = extraAlbums > 0
-    ? `${extraAlbums} album${extraAlbums > 1 ? 's' : ''} (+${extraAlbums * ALBUM_PRICE} €)`
-    : null;
-  const orderNum = `FS-${Date.now()}-${body.equipageNumber.replace(/\W/g,'')}`;
-  const detailText = extraAlbums > 0
-    ? `${selectedPack.label} + ${extraAlbums} album${extraAlbums > 1 ? 's' : ''} · TTC`
-    : `${selectedPack.label} · TTC`;
+  const albumsText = extraAlbums > 0 ? `${extraAlbums} album${extraAlbums>1?'s':''} (+${extraAlbums*ALBUM_PRICE} €)` : null;
+  const orderNum   = `FS-${Date.now()}-${body.equipageNumber.replace(/\W/g,'')}`;
+  const detailText = extraAlbums > 0 ? `${selectedPack.label} + ${extraAlbums} album${extraAlbums>1?'s':''} · TTC` : `${selectedPack.label} · TTC`;
+  const addr       = addrText(body);
+
+  function fillRows(prefix) {
+    const albumsRow = document.getElementById(`${prefix}-albums-row`);
+    const addrRow   = document.getElementById(`${prefix}-addr-row`);
+    if (albumsText) { document.getElementById(`${prefix}-albums`).textContent=albumsText; albumsRow.style.display='flex'; }
+    else { albumsRow.style.display='none'; }
+    if (addr) { document.getElementById(`${prefix}-addr`).textContent=addr; addrRow.style.display='flex'; }
+    else { addrRow.style.display='none'; }
+  }
 
   if (method === 'online') {
-    document.getElementById('c-email').textContent   = body.customerEmail;
-    document.getElementById('c-eq').textContent      = body.equipageNumber;
-    document.getElementById('c-pack').textContent    = selectedPack.label;
-    document.getElementById('c-amount').textContent  = `${total} €`;
-    document.getElementById('c-num').textContent     = orderNum;
-    const albumsRow = document.getElementById('c-albums-row');
-    if (albumsText) { document.getElementById('c-albums').textContent = albumsText; albumsRow.style.display='flex'; }
-    else { albumsRow.style.display = 'none'; }
-
+    document.getElementById('c-email').textContent  = body.customerEmail;
+    document.getElementById('c-eq').textContent     = body.equipageNumber;
+    document.getElementById('c-pack').textContent   = selectedPack.label;
+    document.getElementById('c-amount').textContent = `${total} €`;
+    document.getElementById('c-num').textContent    = orderNum;
+    fillRows('c');
   } else if (method === 'tpe') {
     document.getElementById('tpe-num').textContent    = `${total} €`;
     document.getElementById('tpe-detail').textContent = detailText;
     document.getElementById('tpe-eq').textContent     = body.equipageNumber;
     document.getElementById('tpe-pk').textContent     = selectedPack.label;
-    const albumsRow = document.getElementById('tpe-albums-row');
-    if (albumsText) { document.getElementById('tpe-albums').textContent = albumsText; albumsRow.style.display='flex'; }
-    else { albumsRow.style.display = 'none'; }
-
+    fillRows('tpe');
   } else {
     document.getElementById('cash-num').textContent    = `${total} €`;
     document.getElementById('cash-detail').textContent = detailText;
     document.getElementById('cash-eq').textContent     = body.equipageNumber;
     document.getElementById('cash-pk').textContent     = selectedPack.label;
-    const albumsRow = document.getElementById('cash-albums-row');
-    if (albumsText) { document.getElementById('cash-albums').textContent = albumsText; albumsRow.style.display='flex'; }
-    else { albumsRow.style.display = 'none'; }
+    fillRows('cash');
   }
 }
 </script>
